@@ -1,9 +1,9 @@
 import pygame
 
-from .Piece import Piece
+from figures import Figure
 
 
-class Knight(Piece):
+class Knight(Figure.Figure):
 
     def __init__(self, pos, color, board):
         super().__init__(pos, color, board)

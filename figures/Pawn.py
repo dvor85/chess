@@ -1,15 +1,16 @@
 import pygame
 
-from .Piece import Piece
+from figures import Figure
+from resloader import ResLoader
 
 
-class Pawn(Piece):
+class Pawn(Figure.Figure):
 
     def __init__(self, pos, color, board):
         super().__init__(pos, color, board)
 
-        self.img = pygame.image.load('images/' + color + '_pawn.png')
-        self.img = pygame.transform.scale(self.img, (board.tile_width - 35, board.tile_height - 35))
+        self.img = ResLoader.get_instance().getImage('images/' + color + '_pawn.png')
+        self.img = pygame.transform.scale(self.img, (board.tile_width - 20, board.tile_height - 20))
 
         self.notation = 'P'
 
@@ -38,7 +39,7 @@ class Pawn(Piece):
     def get_moves(self):
         avail = []
         for square in self.get_possible_moves():
-            if square.occupying_piece != None:
+            if square.occupying_figure != None:
                 break
             else:
                 avail.append(square)
@@ -46,25 +47,25 @@ class Pawn(Piece):
         if self.color == 'white':
             if self.x + 1 < 8 and self.y - 1 >= 0:
                 square = self.board.get_square_from_pos((self.x + 1, self.y - 1))
-                if square.occupying_piece != None:
-                    if square.occupying_piece.color != self.color:
+                if square.occupying_figure != None:
+                    if square.occupying_figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y - 1 >= 0:
                 square = self.board.get_square_from_pos((self.x - 1, self.y - 1))
-                if square.occupying_piece != None:
-                    if square.occupying_piece.color != self.color:
+                if square.occupying_figure != None:
+                    if square.occupying_figure.color != self.color:
                         avail.append(square)
 
         elif self.color == 'black':
             if self.x + 1 < 8 and self.y + 1 < 8:
                 square = self.board.get_square_from_pos((self.x + 1, self.y + 1))
-                if square.occupying_piece != None:
-                    if square.occupying_piece.color != self.color:
+                if square.occupying_figure != None:
+                    if square.occupying_figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y + 1 < 8:
                 square = self.board.get_square_from_pos((self.x - 1, self.y + 1))
-                if square.occupying_piece != None:
-                    if square.occupying_piece.color != self.color:
+                if square.occupying_figure != None:
+                    if square.occupying_figure.color != self.color:
                         avail.append(square)
 
         return avail

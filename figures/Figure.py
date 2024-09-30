@@ -1,4 +1,4 @@
-class Piece:
+class Figure:
 
     def __init__(self, pos, color, board):
         self.pos = pos
@@ -15,37 +15,43 @@ class Piece:
             prev_square = self.board.get_square_from_pos(self.pos)
             self.pos, self.x, self.y = square.pos, square.x, square.y
 
-            prev_square.occupying_piece = None
-            square.occupying_piece = self
-            self.board.selected_piece = None
+            prev_square.occupying_figure = None
+            square.occupying_figure = self
+            self.board.selected_figure = None
             self.has_moved = True
 
-            # Pawn promotion
             if self.notation == 'P':
+                # Проход пешки
                 if self.y == 0 or self.y == 7:
-                    from data.classes.pieces.Queen import Queen
-                    square.occupying_piece = Queen(self.pos, self.color, self.board)
+                    from .Queen import Queen
+                    square.occupying_figure = Queen(self.pos, self.color, self.board)
+                # ход пешкой на два поля
+                if abs(prev_square.y - self.y) == 2:
+                    y = 5 if self.board.turn == 'white' else 2
+                    self.board.pawn_2go = self.board.get_square_from_pos((self.x, y)).coord
+                else:
+                    self.board.pawn_2go = '-'
 
-            # Move rook if king castles
+            # Рокировка
             if self.notation == 'K':
                 if prev_square.x - self.x == 2:
-                    rook = self.board.get_piece_from_pos((0, self.y))
+                    rook = self.board.get_figure_from_pos((0, self.y))
                     rook.move(self.board.get_square_from_pos((3, self.y)), force=True)
                 elif prev_square.x - self.x == -2:
-                    rook = self.board.get_piece_from_pos((7, self.y))
+                    rook = self.board.get_figure_from_pos((7, self.y))
                     rook.move(self.board.get_square_from_pos((5, self.y)), force=True)
 
             return True
         else:
-            self.board.selected_piece = None
+            self.board.selected_figure = None
             return False
 
     def get_moves(self):
         avail = []
         for direction in self.get_possible_moves():
             for square in direction:
-                if square.occupying_piece is not None:
-                    if square.occupying_piece.color == self.color:
+                if square.occupying_figure is not None:
+                    if square.occupying_figure.color == self.color:
                         break
                     else:
                         avail.append(square)
@@ -62,6 +68,6 @@ class Piece:
 
         return avail
 
-    # True for all pieces except pawn
+    # Направление атаки одинаково для всех кроме пешки
     def attacking_squares(self):
         return self.get_moves()

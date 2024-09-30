@@ -4,7 +4,7 @@ from chessboard import Board
 
 pygame.init()
 
-WINDOW_SIZE = (800, 800)
+WINDOW_SIZE = (1080, 880)
 screen = pygame.display.set_mode(WINDOW_SIZE)
 clock = pygame.time.Clock()
 board = Board(*WINDOW_SIZE)
@@ -14,7 +14,7 @@ pygame.display.set_caption('Шахматы')
 def draw(display):
     display.fill('white')
     board.draw(display)
-    pygame.display.flip()
+    pygame.display.update()
     clock.tick(60)
 
 

@@ -1,9 +1,9 @@
 import pygame
 
-from .Piece import Piece
+from figures import Figure
 
 
-class King(Piece):
+class King(Figure.Figure):
 
     def __init__(self, pos, color, board):
         super().__init__(pos, color, board)
@@ -42,27 +42,27 @@ class King(Piece):
         if not self.has_moved:
 
             if self.color == 'white':
-                queenside_rook = self.board.get_piece_from_pos((0, 7))
-                kingside_rook = self.board.get_piece_from_pos((7, 7))
+                queenside_rook = self.board.get_figure_from_pos((0, 7))
+                kingside_rook = self.board.get_figure_from_pos((7, 7))
                 if queenside_rook != None:
                     if not queenside_rook.has_moved:
-                        if not all(self.board.get_piece_from_pos((i, 7)) for i in range(1, 4)):
+                        if not all(self.board.get_figure_from_pos((i, 7)) for i in range(1, 4)):
                             return 'queenside'
                 if kingside_rook != None:
                     if not kingside_rook.has_moved:
-                        if not all(self.board.get_piece_from_pos((i, 7)) for i in range(5, 7)):
+                        if not all(self.board.get_figure_from_pos((i, 7)) for i in range(5, 7)):
                             return 'kingside'
 
             elif self.color == 'black':
-                queenside_rook = self.board.get_piece_from_pos((0, 0))
-                kingside_rook = self.board.get_piece_from_pos((7, 0))
+                queenside_rook = self.board.get_figure_from_pos((0, 0))
+                kingside_rook = self.board.get_figure_from_pos((7, 0))
                 if queenside_rook != None:
                     if not queenside_rook.has_moved:
-                        if not all(self.board.get_piece_from_pos((i, 0)) for i in range(1, 4)):
+                        if not all(self.board.get_figure_from_pos((i, 0)) for i in range(1, 4)):
                             return 'queenside'
                 if kingside_rook != None:
                     if not kingside_rook.has_moved:
-                        if not all(self.board.get_piece_from_pos((i, 0)) for i in range(5, 7)):
+                        if not all(self.board.get_figure_from_pos((i, 0)) for i in range(5, 7)):
                             return 'kingside'
 
     def get_valid_moves(self):
