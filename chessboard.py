@@ -17,73 +17,89 @@ class Square:
         self.height = height
         self.board = board
 
-        self.abs_x = 40 + x * width
-        self.abs_y = 40 + y * height
+        self.abs_x = self.board.left_offset + x * width
+        self.abs_y = self.board.top_offset + y * height
         self.abs_pos = (self.abs_x, self.abs_y)
         self.pos = (x, y)
         self.color = 'light' if (x + y) % 2 == 0 else 'dark'
-        self.draw_color = (224, 179, 133) if (x + y) % 2 == 0 else (167, 96, 57)
-        self.highlight_color = (0, 128, 10) if self.color == 'light' else (0, 128, 10)
-        self.occupying_figure = None
+        self.draw_color = self.board.LIGHT_COLOR if (x + y) % 2 == 0 else self.board.DARK_COLOR
+        self.highlight_color = (0, 128, 10)
+        self.figure = None
         self.coord = self.get_coord()
         self.highlight = False
+        self.check, self.checkmate = False, False
 
         self.rect = pygame.Rect(self.abs_x, self.abs_y, self.width, self.height)
 
+    def __str__(self):
+        figure = self.figure.notation if self.figure else ''
+        figure = figure if self.color == 'light' else figure.lower()
+        return f"{figure}{self.coord}"
+
     def get_coord(self):
         columns = 'abcdefgh'
-        y = str(8 - self.y) if self.board.turn == 'white' else str(self.y + 1)
+        y = str(8 - self.y) if self.board.turn == 'w' else str(self.y + 1)
 
         return columns[self.x] + y
+
+    def get_pos_from_coord(self, coord):
+        return ('abcdefgh'.index(coord[0]), int(coord[1]) - 1)
 
     def draw(self, display):
         pygame.draw.rect(display, self.draw_color, self.rect)
         if self.highlight:
             pygame.draw.rect(display, self.highlight_color, self.rect, width=5)
 
-        if self.occupying_figure != None:
-            centering_rect = self.occupying_figure.img.get_rect()
+        if self.check:
+            pygame.draw.rect(display, self.board.CHECK_COLOR, self.rect, width=5)
+
+        if self.checkmate:
+            pygame.draw.rect(display, self.board.CHECK_COLOR, self.rect)
+
+        if self.figure is not None:
+            centering_rect = self.figure.img.get_rect()
             centering_rect.center = self.rect.center
-            display.blit(self.occupying_figure.img, centering_rect.topleft)
+            display.blit(self.figure.img, centering_rect.topleft)
 
 
 class Board:
 
+    DARK_COLOR = (160, 89, 50)
+    LIGHT_COLOR = (224, 179, 133)
+    CHECK_COLOR = (160, 10, 10)
+
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.tile_width = (width - 280) // 8
-        self.tile_height = (height - 80) // 8
+        self.left_offset = 40
+        self.top_offset = 40
+        self.tile_width = (width - 200 - 2 * self.left_offset) // 8
+        self.tile_height = (height - 2 * self.top_offset) // 8
         self.selected_figure = None
-        self.turn = 'white'
-        self.current_side = self.turn[0]
-#
 
-        self.start = 'rnbqkbnr/pppppppp/3PQ3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        self.turn = 'w'
+        self.castling = '-'
+        self.pawn_2go = '-'
+        self.without_attack = 0
+        self.moves = 1
+
+#         self.start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        self.start = 'rnbqkbnr/pppp2p1/8/1N2pp1p/4P3/8/PPPP1PPP/R1BQKBNR w KQkq h6 0 1'
 
         self.squares = self.generate_squares()
 
         self.parse_fen(self.start)
         self.setup_board()
 
-        print(self.generate_fen())
-
     def parse_fen(self, fen):
         params = fen.split()
         self.position = params[0]
         if len(params) > 1:
-            self.current_side = params[1]
-
-            if len(params) == 6:
-                index = 2
-                self.castling = params[2]
-            else:
-                index = 1
-            self.pawn_2go = params[index + 1]
-            self.without_attack = int(params[index + 2])
-            self.moves = int(params[index + 3])
-#         if len(params) < 6:
-#             self.position, current_side, castling, prev_pawn_2go, without_attack, moves = params
+            self.turn = params[1]
+            self.castling = params[2]
+            self.pawn_2go = params[3]
+            self.without_attack = int(params[4])
+            self.moves = int(params[5])
 
     def generate_squares(self):
         square = []
@@ -98,7 +114,7 @@ class Board:
                 return square
 
     def get_figure_from_pos(self, pos):
-        return self.get_square_from_pos(pos).occupying_figure
+        return self.get_square_from_pos(pos).figure
 
     def setup_board(self):
         # iterating 2d list
@@ -113,23 +129,24 @@ class Board:
                 if figure.isdigit():
                     x += int(figure)
                 else:
+                    color = 'b' if figure in 'rnbqkp' else 'w'
                     if figure in 'Rr':
-                        square.occupying_figure = Rook((x, y), 'black' if figure == 'r' else 'white', self)
+                        square.figure = Rook((x, y), color, self)
 
                     elif figure in 'Nn':
-                        square.occupying_figure = Knight((x, y), 'black' if figure == 'n' else 'white', self)
+                        square.figure = Knight((x, y), color, self)
 
                     elif figure in 'Bb':
-                        square.occupying_figure = Bishop((x, y), 'black' if figure == 'b' else 'white', self)
+                        square.figure = Bishop((x, y), color, self)
 
                     elif figure in 'Qq':
-                        square.occupying_figure = Queen((x, y), 'black' if figure == 'q' else 'white', self)
+                        square.figure = Queen((x, y), color, self)
 
                     elif figure in 'Kk':
-                        square.occupying_figure = King((x, y), 'black' if figure == 'k' else 'white', self)
+                        square.figure = King((x, y), color, self)
 
                     elif figure in 'Pp':
-                        square.occupying_figure = Pawn((x, y), 'black' if figure == 'p' else 'white', self)
+                        square.figure = Pawn((x, y), color, self)
                     x += 1
 
     def generate_fen(self):
@@ -143,7 +160,7 @@ class Board:
                     if skip > 0:
                         row += str(skip)
                         skip = 0
-                    if figure.color == 'white':
+                    if figure.color == 'w':
                         row += figure.notation
                     else:
                         row += figure.notation.lower()
@@ -153,33 +170,39 @@ class Board:
             if skip > 0:
                 row += str(skip)
             fen.append(row)
-        return '/'.join(fen)
+        return '/'.join(fen) + f" {self.turn} {self.castling} {self.pawn_2go} {self.without_attack} {self.moves}"
 
     def history(self):
-        print(self.position)
-        print(self.pawn_2go)
+        print(self.generate_fen())
 
     def handle_click(self, mx, my):
-        x = (mx - 40) // self.tile_width
-        y = (my - 40) // self.tile_height
+        x = (mx - self.left_offset) // self.tile_width
+        y = (my - self.top_offset) // self.tile_height
         clicked_square = self.get_square_from_pos((x, y))
 
         if clicked_square is not None:
             if self.selected_figure is None:
-                if clicked_square.occupying_figure is not None:
-                    if clicked_square.occupying_figure.color == self.turn:
-                        self.selected_figure = clicked_square.occupying_figure
+                if clicked_square.figure is not None:
+                    if clicked_square.figure.color == self.turn:
+                        self.selected_figure = clicked_square.figure
 
             elif self.selected_figure.move(clicked_square):
-                self.turn = 'white' if self.turn == 'black' else 'black'
+                # Ход
+                if self.turn == 'b':
+                    self.moves += 1
+
+                if not self.castling:
+                    self.castling = '-'
+
+                self.turn = 'w' if self.turn == 'b' else 'b'
                 self.history()
 
-            elif clicked_square.occupying_figure is not None:
-                if clicked_square.occupying_figure.color == self.turn:
-                    self.selected_figure = clicked_square.occupying_figure
+            elif clicked_square.figure is not None:
+                if clicked_square.figure.color == self.turn:
+                    self.selected_figure = clicked_square.figure
 
     def is_in_check(self, color, board_change=None):  # board_change = [(x1, y1), (x2, y2)]
-        output = False
+        result = False
         king_pos = None
 
         changing_figure = None
@@ -188,68 +211,88 @@ class Board:
         new_square_old_figure = None
 
         if board_change is not None:
-            for square in self.squares:
-                if square.pos == board_change[0]:
-                    changing_figure = square.occupying_figure
-                    old_square = square
-                    old_square.occupying_figure = None
-            for square in self.squares:
-                if square.pos == board_change[1]:
-                    new_square = square
-                    new_square_old_figure = new_square.occupying_figure
-                    new_square.occupying_figure = changing_figure
+            old_square = self.get_square_from_pos(board_change[0])
+            changing_figure = old_square.figure
+            old_square.figure = None
 
-        figures = [i.occupying_figure for i in self.squares if i.occupying_figure is not None]
+#             for square in self.squares:
+#                 if square.pos == board_change[0]:
+#                     changing_figure = square.figure
+#                     old_square = square
+#                     old_square.figure = None
+
+#             for square in self.squares:
+#                 if square.pos == board_change[1]:
+#                     new_square = square
+#                     new_square_old_figure = new_square.figure
+#                     new_square.figure = changing_figure
+
+            new_square = self.get_square_from_pos(board_change[1])
+            new_square_old_figure = new_square.figure
+            new_square.figure = changing_figure
+
+        figures = [i.figure for i in self.squares if i.figure is not None]
 
         if changing_figure is not None:
             if changing_figure.notation == 'K':
                 king_pos = new_square.pos
-        if king_pos == None:
+
+        if king_pos is None:
             for figure in figures:
                 if figure.notation == 'K' and figure.color == color:
                         king_pos = figure.pos
+
         for figure in figures:
             if figure.color != color:
                 for square in figure.attacking_squares():
                     if square.pos == king_pos:
-                        output = True
+                        result = True
+                        square.check = True
 
         if board_change is not None:
-            old_square.occupying_figure = changing_figure
-            new_square.occupying_figure = new_square_old_figure
+            old_square.figure = changing_figure
+            new_square.figure = new_square_old_figure
 
-        return output
+        return result
 
     def is_in_checkmate(self, color):
-        output = False
+        result = 0
 
-        for figure in [i.occupying_figure for i in self.squares]:
-            if figure != None:
+        for figure in [i.figure for i in self.squares]:
+            if figure is not None:
                 if figure.notation == 'K' and figure.color == color:
                     king = figure
 
         if king.get_valid_moves() == []:
             if self.is_in_check(color):
-                output = True
+                result = 2
+                self.get_square_from_pos(king.pos).checkmate = True
+            else:
+                result = 1
 
-        return output
+        return result
 
     def draw_coords(self, display):
-        DARK_COLOR = (160, 89, 50)
-        LIGHT_COLOR = (224, 179, 133)
-        border = pygame.Rect(40, 40, self.tile_width * 8, self.tile_height * 8)
-        pygame.draw.rect(display, DARK_COLOR, border, width=5)
 
-        border = pygame.Rect(0, 0, 80 + self.tile_width * 8, 80 + self.tile_height * 8)
-        pygame.draw.rect(display, LIGHT_COLOR, border, width=40)
+        border = pygame.Rect(self.left_offset, self.top_offset, self.tile_width * 8, self.tile_height * 8)
+        pygame.draw.rect(display, self.DARK_COLOR, border, width=5)
+
+        border = pygame.Rect(0, 0, 2 * self.left_offset + self.tile_width * 8, 2 * self.top_offset + self.tile_height * 8)
+        pygame.draw.rect(display, self.DARK_COLOR, border, width=5)
 
         for i, c in enumerate('abcdefgh', 1):
-            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=DARK_COLOR)
-            display.blit(text, (40 + i * self.tile_width - (self.tile_width + text.get_width()) // 2, 40 + self.tile_height * 8 + text.get_height() // 2))
+            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
+            display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
+                                self.top_offset + self.tile_height * 8 + text.get_height() // 2))
+            display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
+                                (self.top_offset - text.get_height()) // 2))
 
         for i, c in enumerate('87654321', 1):
-            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=DARK_COLOR)
-            display.blit(text, (20 - text.get_width() // 2, 40 + i * self.tile_height - (self.tile_height + text.get_height()) // 2,))
+            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
+            display.blit(text, ((self.left_offset - text.get_width()) // 2,
+                                self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
+            display.blit(text, (self.left_offset + self.tile_width * 8 + (self.left_offset - text.get_width()) // 2,
+                                self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
 
     def draw(self, display):
 

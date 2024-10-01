@@ -12,10 +12,10 @@ pygame.display.set_caption('Шахматы')
 
 
 def draw(display):
-    display.fill('white')
+    display.fill(board.LIGHT_COLOR)
     board.draw(display)
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(30)
 
 
 if __name__ == '__main__':
@@ -30,13 +30,16 @@ if __name__ == '__main__':
                 # нажата кнопка мыши
                 if event.button == 1:
                     board.handle_click(mx, my)
-        if board.is_in_checkmate('black'):  # Черным мат
+        result = (board.is_in_checkmate('b'), board.is_in_checkmate('w'))
+        if 1 in result:  # Пат
             ...
-#             print('White wins!')
-#             running = False
-        elif board.is_in_checkmate('white'):  # Белым мат
+        elif 2 in result:
+            if not result.index(2):  # Черным мат
+                ...
+            else:  # белым мат
+                ...
+        elif result[1] == 2:  # Пат
             ...
-#             print('Black wins!')
-#             running = False
+
         # Доска
         draw(screen)

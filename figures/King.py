@@ -39,31 +39,27 @@ class King(Figure.Figure):
         return avail
 
     def can_castle(self):
-        if not self.has_moved:
+        if self.board.castling != '-':
 
-            if self.color == 'white':
-                queenside_rook = self.board.get_figure_from_pos((0, 7))
-                kingside_rook = self.board.get_figure_from_pos((7, 7))
-                if queenside_rook != None:
-                    if not queenside_rook.has_moved:
-                        if not all(self.board.get_figure_from_pos((i, 7)) for i in range(1, 4)):
-                            return 'queenside'
-                if kingside_rook != None:
-                    if not kingside_rook.has_moved:
-                        if not all(self.board.get_figure_from_pos((i, 7)) for i in range(5, 7)):
-                            return 'kingside'
+            if self.color == 'w':
+                if 'Q' in self.board.castling:
+                    if not any(self.board.get_figure_from_pos((i, 7)) for i in range(1, 4)):
+                        return 'Q'
 
-            elif self.color == 'black':
-                queenside_rook = self.board.get_figure_from_pos((0, 0))
-                kingside_rook = self.board.get_figure_from_pos((7, 0))
-                if queenside_rook != None:
-                    if not queenside_rook.has_moved:
-                        if not all(self.board.get_figure_from_pos((i, 0)) for i in range(1, 4)):
-                            return 'queenside'
-                if kingside_rook != None:
-                    if not kingside_rook.has_moved:
-                        if not all(self.board.get_figure_from_pos((i, 0)) for i in range(5, 7)):
-                            return 'kingside'
+                if 'K' in self.board.castling:
+                    if not any(self.board.get_figure_from_pos((i, 7)) for i in range(5, 7)):
+                        return 'K'
+
+            else:
+                if 'q' in self.board.castling:
+                    if not any(self.board.get_figure_from_pos((i, 0)) for i in range(1, 4)):
+                        return 'q'
+
+                if 'k' in self.board.castling:
+                    if not any(self.board.get_figure_from_pos((i, 0)) for i in range(5, 7)):
+                        return 'k'
+
+        return '0'
 
     def get_valid_moves(self):
         avail = []
@@ -71,9 +67,9 @@ class King(Figure.Figure):
             if not self.board.is_in_check(self.color, board_change=[self.pos, square.pos]):
                 avail.append(square)
 
-        if self.can_castle() == 'queenside':
+        if self.can_castle() in 'Qq':
             avail.append(self.board.get_square_from_pos((self.x - 2, self.y)))
-        if self.can_castle() == 'kingside':
+        if self.can_castle() in 'Kk':
             avail.append(self.board.get_square_from_pos((self.x + 2, self.y)))
 
         return avail
