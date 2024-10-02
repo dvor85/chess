@@ -68,7 +68,7 @@ class Board:
     LIGHT_COLOR = (224, 179, 133)
     CHECK_COLOR = (160, 10, 10)
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, start):
         self.width = width
         self.height = height
         self.left_offset = 40
@@ -77,14 +77,12 @@ class Board:
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.selected_figure = None
 
+        self.start = start
         self.turn = 'w'
         self.castling = '-'
         self.pawn_2go = '-'
         self.without_attack = 0
         self.moves = 1
-
-#         self.start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-        self.start = 'rnbqkbnr/pppp2p1/8/1N2pp1p/4P3/8/PPPP1PPP/R1BQKBNR w KQkq h6 0 1'
 
         self.squares = self.generate_squares()
 
@@ -115,6 +113,12 @@ class Board:
 
     def get_figure_from_pos(self, pos):
         return self.get_square_from_pos(pos).figure
+
+    def find_squares_from_figure(self, color, notation=None):
+        if notation is not None:
+            return [i for i in self.squares if i.figure is not None and i.figure.color == color and i.figure.notation == notation]
+        else:
+            return [i for i in self.squares if i.figure is not None and i.figure.color == color]
 
     def setup_board(self):
         # iterating 2d list
@@ -179,7 +183,6 @@ class Board:
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
         clicked_square = self.get_square_from_pos((x, y))
-
         if clicked_square is not None:
             if self.selected_figure is None:
                 if clicked_square.figure is not None:
@@ -215,18 +218,6 @@ class Board:
             changing_figure = old_square.figure
             old_square.figure = None
 
-#             for square in self.squares:
-#                 if square.pos == board_change[0]:
-#                     changing_figure = square.figure
-#                     old_square = square
-#                     old_square.figure = None
-
-#             for square in self.squares:
-#                 if square.pos == board_change[1]:
-#                     new_square = square
-#                     new_square_old_figure = new_square.figure
-#                     new_square.figure = changing_figure
-
             new_square = self.get_square_from_pos(board_change[1])
             new_square_old_figure = new_square.figure
             new_square.figure = changing_figure
@@ -238,16 +229,13 @@ class Board:
                 king_pos = new_square.pos
 
         if king_pos is None:
-            for figure in figures:
-                if figure.notation == 'K' and figure.color == color:
-                        king_pos = figure.pos
+            king_pos = self.find_squares_from_figure(color, 'K')[0].pos
 
         for figure in figures:
             if figure.color != color:
                 for square in figure.attacking_squares():
                     if square.pos == king_pos:
                         result = True
-                        square.check = True
 
         if board_change is not None:
             old_square.figure = changing_figure
@@ -255,20 +243,25 @@ class Board:
 
         return result
 
+    def is_valid_moves_exists(self, color):
+        my_squares = self.find_squares_from_figure(color)
+        for square in my_squares:
+            if any(square.figure.get_valid_moves()):
+                return True
+
     def is_in_checkmate(self, color):
         result = 0
 
-        for figure in [i.figure for i in self.squares]:
-            if figure is not None:
-                if figure.notation == 'K' and figure.color == color:
-                    king = figure
+        king = self.find_squares_from_figure(color, 'K')[0]
 
-        if king.get_valid_moves() == []:
+        if not self.is_valid_moves_exists(color):
             if self.is_in_check(color):
                 result = 2
-                self.get_square_from_pos(king.pos).checkmate = True
+                king.checkmate = True
             else:
                 result = 1
+        elif self.is_in_check(color):
+            king.check = True
 
         return result
 

@@ -30,9 +30,8 @@ class Pawn(Figure.Figure):
                 moves.append((0, 2))
 
         for move in moves:
-            new_pos = (self.x, self.y + move[1])
-            if new_pos[1] < 8 and new_pos[1] >= 0:
-                avail.append(self.board.get_square_from_pos(new_pos))
+            if 8 > self.y + move[1] >= 0:
+                avail.append(self.board.get_square_from_pos((self.x, self.y + move[1])))
 
         return avail
 
@@ -43,37 +42,33 @@ class Pawn(Figure.Figure):
                 break
             else:
                 avail.append(square)
-            # pawn_2go
-            if square.coord == self.board.pawn_2go:
-                avail.append(square)
 
         if self.color == 'w':
             if self.x + 1 < 8 and self.y - 1 >= 0:
                 square = self.board.get_square_from_pos((self.x + 1, self.y - 1))
-                if square.figure != None:
+                if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y - 1 >= 0:
                 square = self.board.get_square_from_pos((self.x - 1, self.y - 1))
-                if square.figure != None:
+                if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
 
         elif self.color == 'b':
             if self.x + 1 < 8 and self.y + 1 < 8:
                 square = self.board.get_square_from_pos((self.x + 1, self.y + 1))
-                if square.figure != None:
+                if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y + 1 < 8:
                 square = self.board.get_square_from_pos((self.x - 1, self.y + 1))
-                if square.figure != None:
+                if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
 
         return avail
 
     def attacking_squares(self):
-        moves = self.get_moves()
-        # return the diagonal moves
-        return [i for i in moves if i.x != self.x]
+        # атака по диагонали
+        return [i for i in self.get_moves() if i.x != self.x]

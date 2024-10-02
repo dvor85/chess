@@ -26,14 +26,14 @@ class King(Figure.Figure):
             (-1, -1),  # nw
         ]
 
+        if self.can_castle() in 'Qq':
+            moves.append((-2, 0))
+        if self.can_castle() in 'Kk':
+            moves.append((2, 0))
+
         for move in moves:
             new_pos = (self.x + move[0], self.y + move[1])
-            if (
-                new_pos[0] < 8 and
-                new_pos[0] >= 0 and
-                new_pos[1] < 8 and
-                new_pos[1] >= 0
-            ):
+            if (0 <= new_pos[0] < 8 and 0 <= new_pos[1] < 8):
                 avail.append([self.board.get_square_from_pos(new_pos)])
 
         return avail
@@ -61,15 +61,3 @@ class King(Figure.Figure):
 
         return '0'
 
-    def get_valid_moves(self):
-        avail = []
-        for square in self.get_moves():
-            if not self.board.is_in_check(self.color, board_change=[self.pos, square.pos]):
-                avail.append(square)
-
-        if self.can_castle() in 'Qq':
-            avail.append(self.board.get_square_from_pos((self.x - 2, self.y)))
-        if self.can_castle() in 'Kk':
-            avail.append(self.board.get_square_from_pos((self.x + 2, self.y)))
-
-        return avail

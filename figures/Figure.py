@@ -32,7 +32,7 @@ class Figure:
                     square.figure = Queen(self.pos, self.color, self.board)
                 # ход пешкой на два поля
                 if abs(prev_square.y - self.y) == 2:
-                    y = 5 if self.board.turn == 'w' else 2
+                    y = 5 if self.color == 'w' else 2
                     self.board.pawn_2go = self.board.get_square_from_pos((self.x, y)).coord
 
             # Рокировка
@@ -46,7 +46,7 @@ class Figure:
                     rook.move(self.board.get_square_from_pos((5, self.y)), force=True)
 
                 if self.board.castling != '-':
-                    if self.board.turn == 'w':
+                    if self.color == 'w':
                         self.board.castling = self.board.castling.replace('KQ', '')
                     else:
                         self.board.castling = self.board.castling.replace('kq', '')
