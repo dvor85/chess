@@ -11,29 +11,27 @@ from resloader import ResLoader
 class Square:
 
     def __init__(self, x, y, width, height, board):
+
         self.x = x
-        self.y = y
+        # инвертировать доску
+        self.y = 7 - y if board.invert else y
         self.width = width
         self.height = height
         self.board = board
 
         self.abs_x = self.board.left_offset + x * width
         self.abs_y = self.board.top_offset + y * height
-        self.abs_pos = (self.abs_x, self.abs_y)
-        self.pos = (x, y)
-        self.color = 'light' if (x + y) % 2 == 0 else 'dark'
-        self.draw_color = self.board.LIGHT_COLOR if (x + y) % 2 == 0 else self.board.DARK_COLOR
-        self.highlight_color = (0, 128, 10)
+        self.pos = (self.x, self.y)
+        self.draw_color = self.board.LIGHT_COLOR if not sum(self.pos) % 2 else self.board.DARK_COLOR
         self.figure = None
         self.coord = self.get_coord()
-        self.highlight = False
-        self.check, self.checkmate = False, False
+        self.highlight, self.check, self.checkmate = False, False, False
 
         self.rect = pygame.Rect(self.abs_x, self.abs_y, self.width, self.height)
 
     def __str__(self):
         figure = self.figure.notation if self.figure else ''
-        figure = figure if self.color == 'light' else figure.lower()
+        figure = figure if not sum(self.pos) % 2 else figure.lower()
         return f"{figure}{self.coord}"
 
     def get_coord(self):
@@ -48,7 +46,7 @@ class Square:
     def draw(self, display):
         pygame.draw.rect(display, self.draw_color, self.rect)
         if self.highlight:
-            pygame.draw.rect(display, self.highlight_color, self.rect, width=5)
+            pygame.draw.rect(display, self.board.HIGHLIGHT_COLOR, self.rect, width=5)
 
         if self.check:
             pygame.draw.rect(display, self.board.CHECK_COLOR, self.rect, width=5)
@@ -67,6 +65,7 @@ class Board:
     DARK_COLOR = (160, 89, 50)
     LIGHT_COLOR = (224, 179, 133)
     CHECK_COLOR = (160, 10, 10)
+    HIGHLIGHT_COLOR = (0, 128, 10)
 
     def __init__(self, width, height, start):
         self.width = width
@@ -76,6 +75,7 @@ class Board:
         self.tile_width = (width - 200 - 2 * self.left_offset) // 8
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.selected_figure = None
+        self.invert = True
 
         self.start = start
         self.turn = 'w'
@@ -108,27 +108,24 @@ class Board:
 
     def get_square_from_pos(self, pos):
         for square in self.squares:
-            if (square.x, square.y) == pos:
+            if square.pos == pos:
                 return square
 
     def get_figure_from_pos(self, pos):
         return self.get_square_from_pos(pos).figure
 
-    def find_squares_from_figure(self, color, notation=None):
+    def find_squares_by_figure(self, color, notation=None):
         if notation is not None:
             return [i for i in self.squares if i.figure is not None and i.figure.color == color and i.figure.notation == notation]
         else:
             return [i for i in self.squares if i.figure is not None and i.figure.color == color]
 
     def setup_board(self):
-        # iterating 2d list
-
         for y, row in enumerate(self.position.split('/')):
             x = 0
             irow = iter(row)
             while x < 8:
                 figure = next(irow, '')
-#             for x, figure in enumerate(list(row)):
                 square = self.get_square_from_pos((x, y))
                 if figure.isdigit():
                     x += int(figure)
@@ -182,12 +179,16 @@ class Board:
     def handle_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
+        if self.invert:
+            y = 7 - y
         clicked_square = self.get_square_from_pos((x, y))
         if clicked_square is not None:
+            print(clicked_square.pos)
             if self.selected_figure is None:
                 if clicked_square.figure is not None:
                     if clicked_square.figure.color == self.turn:
                         self.selected_figure = clicked_square.figure
+                        print(self.selected_figure)
 
             elif self.selected_figure.move(clicked_square):
                 # Ход
@@ -222,20 +223,17 @@ class Board:
             new_square_old_figure = new_square.figure
             new_square.figure = changing_figure
 
-        figures = [i.figure for i in self.squares if i.figure is not None]
-
         if changing_figure is not None:
             if changing_figure.notation == 'K':
                 king_pos = new_square.pos
 
         if king_pos is None:
-            king_pos = self.find_squares_from_figure(color, 'K')[0].pos
+            king_pos = self.find_squares_by_figure(color, 'K')[0].pos
 
-        for figure in figures:
-            if figure.color != color:
-                for square in figure.attacking_squares():
-                    if square.pos == king_pos:
-                        result = True
+        for enemy_squares in self.find_squares_by_figure('b' if color == 'w' else 'w'):
+            for square in enemy_squares.figure.attacking_squares():
+                if square.pos == king_pos:
+                    result = True
 
         if board_change is not None:
             old_square.figure = changing_figure
@@ -244,7 +242,7 @@ class Board:
         return result
 
     def is_valid_moves_exists(self, color):
-        my_squares = self.find_squares_from_figure(color)
+        my_squares = self.find_squares_by_figure(color)
         for square in my_squares:
             if any(square.figure.get_valid_moves()):
                 return True
@@ -252,7 +250,7 @@ class Board:
     def is_in_checkmate(self, color):
         result = 0
 
-        king = self.find_squares_from_figure(color, 'K')[0]
+        king = self.find_squares_by_figure(color, 'K')[0]
 
         if not self.is_valid_moves_exists(color):
             if self.is_in_check(color):
@@ -280,7 +278,7 @@ class Board:
             display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 (self.top_offset - text.get_height()) // 2))
 
-        for i, c in enumerate('87654321', 1):
+        for i, c in enumerate('87654321' if not self.invert else '12345678', 1):
             text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
             display.blit(text, ((self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))

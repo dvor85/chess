@@ -8,7 +8,7 @@ class Figure:
         self.has_moved = False
 
     def __str__(self):
-        return f"{self.color}"
+        return f"{self.color}{self.notation}"
 
     def move(self, square, force=False):
         for i in self.board.squares:

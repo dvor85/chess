@@ -12,11 +12,12 @@ class Chess():
         pygame.display.set_caption('Шахматы')
         self.screen = pygame.display.set_mode(Chess.WINDOW_SIZE)
         self.clock = pygame.time.Clock()
-        self.start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+#         self.start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         self.start = 'rnbqkbnr/2pp1ppp/1p6/p3p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 4'
-        self.start = 'rnbqkbnr/pppp2p1/8/1N2pp1p/4P3/8/PPPP1PPP/R1BQKBNR w KQkq h6 0 1'
-        self.start = 'rnb1kbnr/ppqp2p1/8/4pP1p/8/8/PPPP1PPP/R1BQKBNR b KQkq - 0 2'
-        self.start = 'rnbq1bnr/2p5/1p2Q3/p2P2p1/1P1P1PPp/3N3P/P1P3k1/RNB1K2R b KQ f3 0 15'
+#         self.start = 'rnbqkbnr/2pp1ppp/8/pp2p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq b6 0 4'
+#         self.start = 'rnbqkbnr/pppp2p1/8/1N2pp1p/4P3/8/PPPP1PPP/R1BQKBNR w KQkq h6 0 1'
+#         self.start = 'rnb1kbnr/ppqp2p1/8/4pP1p/8/8/PPPP1PPP/R1BQKBNR b KQkq - 0 2'
+#         self.start = 'rnbq1bnr/2p5/1p2Q3/p2P2p1/1P1P1PPp/3N3P/P1P3k1/RNB1K2R b KQ f3 0 15'
         self.board = Board(*Chess.WINDOW_SIZE, self.start)
         self.running = False
 
