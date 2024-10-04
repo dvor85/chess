@@ -1,4 +1,5 @@
 import pygame
+from config import Config
 from figures.Pawn import Pawn
 from figures.Bishop import Bishop
 from figures.King import King
@@ -67,26 +68,26 @@ class Board:
     CHECK_COLOR = (160, 10, 10)
     HIGHLIGHT_COLOR = (0, 128, 10)
 
-    def __init__(self, width, height, start):
+    def __init__(self, width, height):
         self.width = width
         self.height = height
         self.left_offset = 40
         self.top_offset = 40
         self.tile_width = (width - 200 - 2 * self.left_offset) // 8
         self.tile_height = (height - 2 * self.top_offset) // 8
-        self.selected_figure = None
-        self.invert = True
+        self.cfg = Config.get()
 
-        self.start = start
+    def new_game(self):
+        self.selected_figure = None
         self.turn = 'w'
         self.castling = '-'
         self.pawn_2go = '-'
         self.without_attack = 0
         self.moves = 1
 
+        self.invert = self.cfg.START_COLOR == 'b'
+        self.parse_fen(self.cfg.START_CONFIG)
         self.squares = self.generate_squares()
-
-        self.parse_fen(self.start)
         self.setup_board()
 
     def parse_fen(self, fen):
