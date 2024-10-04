@@ -5,7 +5,7 @@ from menu import Menu
 
 class Chess():
 
-    WINDOW_SIZE = (1080, 920)
+    WINDOW_SIZE = (1080, 880)
 
     def __init__(self):
         pygame.init()
@@ -15,11 +15,15 @@ class Chess():
 
         self.board = Board(*Chess.WINDOW_SIZE)
         self.menu = Menu(self.screen, self.board)
+        self.menu.button('Новая игра', self.board.new_game)
+        self.menu.dropdown("Играть за ...", ['Белых', 'Чёрных'], ('w', 'b'), lambda: 1)
+
         self.running = False
 
-    def draw(self):
+    def draw(self, events):
         self.screen.fill(self.board.LIGHT_COLOR)
         self.board.draw(self.screen)
+        self.menu.draw(events)
         pygame.display.update()
         self.clock.tick(30)
 
@@ -47,8 +51,7 @@ class Chess():
 
             # Доска
 
-            self.menu.draw(events)
-            self.draw()
+            self.draw(events)
 
     def end_game(self, result=None):
 
@@ -65,6 +68,9 @@ class Chess():
 
 
 if __name__ == '__main__':
+#     l = []
     chess = Chess()
+#     l.append(chess.init_widgets())
+#     chess.init_widgets()
     chess.start_game()
 
