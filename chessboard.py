@@ -7,6 +7,7 @@ from figures.Knight import Knight
 from figures.Queen import Queen
 from figures.Rook import Rook
 from resloader import ResLoader
+from bot import Minimax
 
 
 class Square:
@@ -25,21 +26,13 @@ class Square:
         self.pos = (self.x, self.y)
         self.draw_color = self.board.LIGHT_COLOR if not sum(self.pos) % 2 else self.board.DARK_COLOR
         self.figure = None
-        self.coord = self.get_coord()
+        self.coord = self.board.get_coord(self.pos)
         self.highlight, self.check, self.checkmate = False, False, False
 
         self.rect = pygame.Rect(self.abs_x, self.abs_y, self.width, self.height)
 
     def __str__(self):
-        figure = self.figure.notation if self.figure else ''
-        figure = figure if not sum(self.pos) % 2 else figure.lower()
-        return f"{figure}{self.coord}"
-
-    def get_coord(self):
-        columns = 'abcdefgh'
-        y = str(8 - self.y) if self.board.turn == 'w' else str(self.y + 1)
-
-        return columns[self.x] + y
+        return f"{self.coord}"
 
     def get_pos_from_coord(self, coord):
         return ('abcdefgh'.index(coord[0]), int(coord[1]) - 1)
@@ -76,8 +69,17 @@ class Board:
         self.tile_width = (width - 200 - 2 * self.left_offset) // 8
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.cfg = Config.get()
+        self.invert = self.cfg.PLAYER_COLOR == 'b'
+        self.bot_color = 'w' if self.invert else 'b'
+        self.bot = Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
+
+    def get_coord(self, pos):
+        columns = 'abcdefgh'
+        y = str(8 - pos[1]) if not self.invert else str(pos[1] + 1)
+        return columns[pos[0]] + y
 
     def new_game(self):
+        self.game_over = 0
         self.selected_figure = None
         self.turn = 'w'
         self.castling = '-'
@@ -85,10 +87,13 @@ class Board:
         self.without_attack = 0
         self.moves = 1
 
-        self.invert = self.cfg.START_COLOR == 'b'
-        self.parse_fen(self.cfg.START_CONFIG)
+        self.parse_fen(self.cfg.START_POSITION)
         self.squares = self.generate_squares()
         self.setup_board()
+        self.history = {}
+
+    def change_side(self):
+        self.turn = 'w' if self.turn == 'b' else 'b'
 
     def parse_fen(self, fen):
         params = fen.split()
@@ -108,9 +113,8 @@ class Board:
         return square
 
     def get_square_from_pos(self, pos):
-        for square in self.squares:
-            if square.pos == pos:
-                return square
+        y = pos[1] if not self.invert else 7 - pos[1]
+        return self.squares[y * 8 + pos[0]]
 
     def get_figure_from_pos(self, pos):
         return self.get_square_from_pos(pos).figure
@@ -153,6 +157,8 @@ class Board:
 
     def generate_fen(self):
         fen = []
+        if not self.castling:
+            self.castling = '-'
         for y in range(8):
             row = ''
             skip = 0
@@ -174,39 +180,53 @@ class Board:
             fen.append(row)
         return '/'.join(fen) + f" {self.turn} {self.castling} {self.pawn_2go} {self.without_attack} {self.moves}"
 
-    def history(self):
-        print(self.generate_fen())
+    def update_history(self, from_pos, to_pos):
+        move = self.history.setdefault(self.moves, {})
+        move[self.turn] = str(self.selected_figure) + f'{self.get_coord(from_pos)}{self.get_coord(to_pos)}'
+        if self.turn == 'b':
+            move['fen'] = self.generate_fen()
+        print(move)
 
     def handle_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
         if self.invert:
             y = 7 - y
-        clicked_square = self.get_square_from_pos((x, y))
-        if clicked_square is not None:
-            print(clicked_square.pos)
-            if self.selected_figure is None:
-                if clicked_square.figure is not None:
-                    if clicked_square.figure.color == self.turn:
-                        self.selected_figure = clicked_square.figure
-                        print(self.selected_figure)
 
-            elif self.selected_figure.move(clicked_square):
-                # Ход
-                if self.turn == 'b':
-                    self.moves += 1
+        self.clicked_square = self.get_square_from_pos((x, y))
+        if not self.clicked_square is None:
+            print(self.clicked_square.pos)
+            for i in self.squares:
+                i.highlight = False
+                i.check = False
 
-                if not self.castling:
-                    self.castling = '-'
+            if not self.clicked_square.figure is None:
+                if self.clicked_square.figure.color == self.turn:
+                    self.selected_figure = self.clicked_square.figure
+                    return
+#
 
-                self.turn = 'w' if self.turn == 'b' else 'b'
-                self.history()
+            if not self.selected_figure is None:
+                return self.selected_figure.move(self.clicked_square)
 
-            elif clicked_square.figure is not None:
-                if clicked_square.figure.color == self.turn:
-                    self.selected_figure = clicked_square.figure
+    def virtual_move(self, from_to, hook=None, *args):  # from_to = [(x1, y1), (x2, y2)]
+        old_square = self.get_square_from_pos(from_to[0])
+        changing_figure = old_square.figure
+        old_square.figure = None
 
-    def is_in_check(self, color, board_change=None):  # board_change = [(x1, y1), (x2, y2)]
+        new_square = self.get_square_from_pos(from_to[1])
+        new_square_old_figure = new_square.figure
+        new_square.figure = changing_figure
+
+        try:
+            if callable(hook):
+                return hook(*args)
+
+        finally:
+            old_square.figure = changing_figure
+            new_square.figure = new_square_old_figure
+
+    def is_in_check(self, color, from_to=None):  # from_to = [(x1, y1), (x2, y2)]
         result = False
         king_pos = None
 
@@ -215,12 +235,12 @@ class Board:
         new_square = None
         new_square_old_figure = None
 
-        if board_change is not None:
-            old_square = self.get_square_from_pos(board_change[0])
+        if from_to is not None:
+            old_square = self.get_square_from_pos(from_to[0])
             changing_figure = old_square.figure
             old_square.figure = None
 
-            new_square = self.get_square_from_pos(board_change[1])
+            new_square = self.get_square_from_pos(from_to[1])
             new_square_old_figure = new_square.figure
             new_square.figure = changing_figure
 
@@ -229,24 +249,27 @@ class Board:
                 king_pos = new_square.pos
 
         if king_pos is None:
-            king_pos = self.find_squares_by_figure(color, 'K')[0].pos
+            kings = self.find_squares_by_figure(color, 'K')
+            if kings:
+                king_pos = kings[0].pos
 
         for enemy_squares in self.find_squares_by_figure('b' if color == 'w' else 'w'):
             for square in enemy_squares.figure.attacking_squares():
                 if square.pos == king_pos:
                     result = True
 
-        if board_change is not None:
+        if from_to is not None:
             old_square.figure = changing_figure
             new_square.figure = new_square_old_figure
 
         return result
 
+    def all_valid_moves(self, color):
+        return {s.figure.pos: s.figure.get_valid_moves() for s in self.find_squares_by_figure(color)}
+
     def is_valid_moves_exists(self, color):
-        my_squares = self.find_squares_by_figure(color)
-        for square in my_squares:
-            if any(square.figure.get_valid_moves()):
-                return True
+        if any(self.all_valid_moves(color).values()):
+            return True
 
     def is_in_checkmate(self, color):
         result = 0

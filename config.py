@@ -18,8 +18,10 @@ class Config:
         # self.START_CONFIG = 'rnbqkbnr/pppp2p1/8/1N2pp1p/4P3/8/PPPP1PPP/R1BQKBNR w KQkq h6 0 1'
         # self.START_CONFIG = 'rnb1kbnr/ppqp2p1/8/4pP1p/8/8/PPPP1PPP/R1BQKBNR b KQkq - 0 2'
         # self.START_CONFIG = 'rnbq1bnr/2p5/1p2Q3/p2P2p1/1P1P1PPp/3N3P/P1P3k1/RNB1K2R b KQ f3 0 15'
-        self.START_CONFIG = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-        self.START_COLOR = 'w'
+        self.START_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        self.PLAYER_COLOR = 'w'
+        self.DIFFICULTY = 3
+
         self.__load_config()
 
     def __str__(self):
@@ -31,7 +33,7 @@ class Config:
                 data = json.load(fp)
                 self.__dict__.update(data)
 
-    def save_fen(self, fen):
+    def save_config(self, fen):
         with Config.__settings_f.open('w') as fp:
-            json.dump(self.__dict__, fp)
+            json.dump(self.__dict__, fp, indent=4, sort_keys=True)
 

@@ -8,20 +8,21 @@ class Figure:
         self.has_moved = False
 
     def __str__(self):
-        return f"{self.color}{self.notation}"
+        fig = self.notation if self.color == 'w' else self.notation.lower()
+        return fig
 
-    def move(self, square, force=False):
-        for i in self.board.squares:
-            i.highlight = False
-            i.check = False
+    def move(self, to_square, force=False):
+#         for i in self.board.squares:
+#             i.highlight = False
+#             i.check = False
 
-        if square in self.get_valid_moves() or force:
+        if to_square in self.get_valid_moves() or force:
             prev_square = self.board.get_square_from_pos(self.pos)
-            self.pos, self.x, self.y = square.pos, square.x, square.y
+            self.pos, self.x, self.y = to_square.pos, to_square.x, to_square.y
 
             prev_square.figure = None
-            square.figure = self
-            self.board.selected_figure = None
+            to_square.figure = self
+#             self.board.selected_figure = None
             self.has_moved = True
             self.board.pawn_2go = '-'
 
@@ -29,7 +30,7 @@ class Figure:
                 # Проход пешки
                 if self.y == 0 or self.y == 7:
                     from .Queen import Queen
-                    square.figure = Queen(self.pos, self.color, self.board)
+                    to_square.figure = Queen(self.pos, self.color, self.board)
                 # ход пешкой на два поля
                 if abs(prev_square.y - self.y) == 2:
                     y = 5 if self.color == 'w' else 2
@@ -65,14 +66,14 @@ class Figure:
                             self.board.castling = self.board.castling.replace('k', '')
 
             # число предыдущих ходов без взятий или движения пешек
-            if square in self.attacking_squares() or self.notation == 'P':
+            if to_square in self.attacking_squares() or self.notation == 'P':
                 self.board.without_attack = 0
             else:
                 self.board.without_attack += 1
 
             return True
         else:
-            self.board.selected_figure = None
+#             self.board.selected_figure = None
             return False
 
     def get_moves(self):
@@ -92,7 +93,7 @@ class Figure:
     def get_valid_moves(self):
         avail = []
         for square in self.get_moves():
-            if not self.board.is_in_check(self.color, board_change=[self.pos, square.pos]):
+            if not self.board.is_in_check(self.color, from_to=[self.pos, square.pos]):
                 avail.append(square)
 
         return avail
