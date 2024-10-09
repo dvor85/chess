@@ -7,7 +7,7 @@ class Minimax:
         self.player_color = board.cfg.PLAYER_COLOR
 
         self.pawnEval = [
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [6.0, 7.0, 7.0, 7.5, 7.5, 7.0, 7.0, 6.0],
                 [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
                 [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
                 [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
@@ -79,15 +79,15 @@ class Minimax:
 
         def getAbsoluteValue():
             if figure.notation == 'P':
-                return 10 + (self.pawnEval[y][x] if figure.color == self.player_color else self.pawnEval[7 - y][x])
+                return 1 + (self.pawnEval[y][x] if figure.color == self.player_color else self.pawnEval[7 - y][x])
             elif figure.notation == 'R':
-                return 50 + (self.rookEval[y][x] if figure.color == self.player_color else self.rookEval[7 - y][x])
+                return 5 + (self.rookEval[y][x] if figure.color == self.player_color else self.rookEval[7 - y][x])
             elif figure.notation == 'N':
-                return 30 + self.knightEval[y][x]
+                return 3 + self.knightEval[y][x]
             elif figure.notation == 'B':
-                return 30 + (self.bishopEval[y][x] if figure.color == self.player_color else self.bishopEval[7 - y][x])
+                return 3 + (self.bishopEval[y][x] if figure.color == self.player_color else self.bishopEval[7 - y][x])
             elif figure.notation == 'Q':
-                return 90 + self.evalQueen[y][x];
+                return 9 + self.evalQueen[y][x];
             elif figure.notation == 'K':
                 return 900 + (self.kingEval[y][x] if figure.color == self.player_color else  self.kingEval[7 - y][x])
 

@@ -1,19 +1,12 @@
-import pygame
-
 from figures import Figure
-from resloader import ResLoader
 
 
 class Pawn(Figure.Figure):
 
     def __init__(self, pos, color, board):
+        self.notation = 'P'
         super().__init__(pos, color, board)
         self.has_moved = 1 < self.y < 6
-
-        self.img = ResLoader.get_instance().getImage('images/' + color + '_pawn.png')
-        self.img = pygame.transform.scale(self.img, (board.tile_width - 20, board.tile_height - 20))
-
-        self.notation = 'P'
 
     def get_possible_moves(self):
         avail = []

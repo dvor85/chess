@@ -41,8 +41,7 @@ class Chess():
                 self.board.clicked_square = self.board.get_square_from_pos(t)
 
                 res = self.board.selected_figure.move(self.board.clicked_square)
-                if res:
-                    self.board.moves += 1
+
             else:
 
                 mx, my = pygame.mouse.get_pos()
@@ -57,10 +56,11 @@ class Chess():
                             res = self.board.handle_click(mx, my)
 
             if res:
-                from_pos = self.board.selected_figure.pos
                 to_pos = self.board.clicked_square.pos
-                self.board.update_history(from_pos, to_pos)
+                self.board.update_history(to_pos)
 
+                if self.board.turn == 'b':
+                    self.board.moves += 1
                 self.board.change_side()
                 self.board.selected_figure = None
 
@@ -82,7 +82,7 @@ class Chess():
             elif 2 in result:
                 if not result.index(2):
                     message = f'Мат черным! \n{message}'
-                else:  # белым мат
+                else:
                     message = f'Мат белым! \n{message}'
             print(message)
 

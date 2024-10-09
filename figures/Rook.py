@@ -1,17 +1,11 @@
-import pygame
-
 from figures import Figure
 
 
 class Rook(Figure.Figure):
 
     def __init__(self, pos, color, board):
-        super().__init__(pos, color, board)
-
-        self.img = pygame.image.load('images/' + color + '_rook.png')
-        self.img = pygame.transform.scale(self.img, (board.tile_width - 20, board.tile_height - 20))
-
         self.notation = 'R'
+        super().__init__(pos, color, board)
 
     def get_possible_moves(self):
         avail = []

@@ -7,7 +7,7 @@ from figures.Knight import Knight
 from figures.Queen import Queen
 from figures.Rook import Rook
 from resloader import ResLoader
-from bot import Minimax
+import bot
 
 
 class Square:
@@ -16,7 +16,7 @@ class Square:
 
         self.x = x
         # инвертировать доску
-        self.y = 7 - y if board.invert else y
+        self.y = 7 - y if board.is_player_black else y
         self.width = width
         self.height = height
         self.board = board
@@ -69,13 +69,13 @@ class Board:
         self.tile_width = (width - 200 - 2 * self.left_offset) // 8
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.cfg = Config.get()
-        self.invert = self.cfg.PLAYER_COLOR == 'b'
-        self.bot_color = 'w' if self.invert else 'b'
-        self.bot = Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
+        self.is_player_black = self.cfg.PLAYER_COLOR == 'b'
+        self.bot_color = self.invert(self.is_player_black)
+        self.bot = bot.Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
 
     def get_coord(self, pos):
         columns = 'abcdefgh'
-        y = str(8 - pos[1]) if not self.invert else str(pos[1] + 1)
+        y = str(8 - pos[1]) if not self.is_player_black else str(pos[1] + 1)
         return columns[pos[0]] + y
 
     def new_game(self):
@@ -93,7 +93,10 @@ class Board:
         self.history = {}
 
     def change_side(self):
-        self.turn = 'w' if self.turn == 'b' else 'b'
+        self.turn = self.invert(self.turn)
+
+    def invert(self, color):
+        return 'w' if color == 'b' else 'b'
 
     def parse_fen(self, fen):
         params = fen.split()
@@ -113,7 +116,7 @@ class Board:
         return square
 
     def get_square_from_pos(self, pos):
-        y = pos[1] if not self.invert else 7 - pos[1]
+        y = pos[1] if not self.is_player_black else 7 - pos[1]
         return self.squares[y * 8 + pos[0]]
 
     def get_figure_from_pos(self, pos):
@@ -180,9 +183,9 @@ class Board:
             fen.append(row)
         return '/'.join(fen) + f" {self.turn} {self.castling} {self.pawn_2go} {self.without_attack} {self.moves}"
 
-    def update_history(self, from_pos, to_pos):
+    def update_history(self, to_pos):
         move = self.history.setdefault(self.moves, {})
-        move[self.turn] = str(self.selected_figure) + f'{self.get_coord(from_pos)}{self.get_coord(to_pos)}'
+        move[self.turn] = str(self.selected_figure) + f'{self.get_coord(to_pos)}'
         if self.turn == 'b':
             move['fen'] = self.generate_fen()
         print(move)
@@ -190,7 +193,7 @@ class Board:
     def handle_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
-        if self.invert:
+        if self.is_player_black:
             y = 7 - y
 
         self.clicked_square = self.get_square_from_pos((x, y))
@@ -204,12 +207,11 @@ class Board:
                 if self.clicked_square.figure.color == self.turn:
                     self.selected_figure = self.clicked_square.figure
                     return
-#
 
             if not self.selected_figure is None:
                 return self.selected_figure.move(self.clicked_square)
 
-    def virtual_move(self, from_to, hook=None, *args):  # from_to = [(x1, y1), (x2, y2)]
+    def virtual_move(self, from_to, on_moved, *args):  # from_to = [(x1, y1), (x2, y2)]
         old_square = self.get_square_from_pos(from_to[0])
         changing_figure = old_square.figure
         old_square.figure = None
@@ -219,50 +221,29 @@ class Board:
         new_square.figure = changing_figure
 
         try:
-            if callable(hook):
-                return hook(*args)
+            if callable(on_moved):
+                return on_moved(*args)
 
         finally:
             old_square.figure = changing_figure
             new_square.figure = new_square_old_figure
 
     def is_in_check(self, color, from_to=None):  # from_to = [(x1, y1), (x2, y2)]
-        result = False
-        king_pos = None
 
-        changing_figure = None
-        old_square = None
-        new_square = None
-        new_square_old_figure = None
-
-        if from_to is not None:
-            old_square = self.get_square_from_pos(from_to[0])
-            changing_figure = old_square.figure
-            old_square.figure = None
-
-            new_square = self.get_square_from_pos(from_to[1])
-            new_square_old_figure = new_square.figure
-            new_square.figure = changing_figure
-
-        if changing_figure is not None:
-            if changing_figure.notation == 'K':
-                king_pos = new_square.pos
-
-        if king_pos is None:
+        def on_moved():
             kings = self.find_squares_by_figure(color, 'K')
             if kings:
                 king_pos = kings[0].pos
 
-        for enemy_squares in self.find_squares_by_figure('b' if color == 'w' else 'w'):
-            for square in enemy_squares.figure.attacking_squares():
-                if square.pos == king_pos:
-                    result = True
+            for enemy_squares in self.find_squares_by_figure('b' if color == 'w' else 'w'):
+                for square in enemy_squares.figure.attacking_squares():
+                    if square.pos == king_pos:
+                        return True
 
         if from_to is not None:
-            old_square.figure = changing_figure
-            new_square.figure = new_square_old_figure
-
-        return result
+            return self.virtual_move(from_to, on_moved)
+        else:
+            return on_moved()
 
     def all_valid_moves(self, color):
         return {s.figure.pos: s.figure.get_valid_moves() for s in self.find_squares_by_figure(color)}
@@ -302,7 +283,7 @@ class Board:
             display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 (self.top_offset - text.get_height()) // 2))
 
-        for i, c in enumerate('87654321' if not self.invert else '12345678', 1):
+        for i, c in enumerate('87654321' if not self.is_player_black else '12345678', 1):
             text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
             display.blit(text, ((self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))

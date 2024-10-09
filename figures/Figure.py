@@ -1,3 +1,7 @@
+import pygame
+from resloader import ResLoader
+
+
 class Figure:
 
     def __init__(self, pos, color, board):
@@ -6,16 +10,14 @@ class Figure:
         self.color = color
         self.board = board
         self.has_moved = False
+        self.img = ResLoader.get_instance().getImage(f'images/{color}_{self.notation.lower()}.png')
+        self.img = pygame.transform.scale(self.img, (board.tile_width - 20, board.tile_height - 20))
 
     def __str__(self):
         fig = self.notation if self.color == 'w' else self.notation.lower()
         return fig
 
     def move(self, to_square, force=False):
-#         for i in self.board.squares:
-#             i.highlight = False
-#             i.check = False
-
         if to_square in self.get_valid_moves() or force:
             prev_square = self.board.get_square_from_pos(self.pos)
             self.pos, self.x, self.y = to_square.pos, to_square.x, to_square.y
@@ -72,9 +74,6 @@ class Figure:
                 self.board.without_attack += 1
 
             return True
-        else:
-#             self.board.selected_figure = None
-            return False
 
     def get_moves(self):
         avail = []
