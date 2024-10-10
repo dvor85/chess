@@ -21,6 +21,7 @@ class Config:
         self.START_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         self.PLAYER_COLOR = 'w'
         self.DIFFICULTY = 3
+        self.TIME_LIMIT = '15:00'
 
         self.__load_config()
 
@@ -33,7 +34,8 @@ class Config:
                 data = json.load(fp)
                 self.__dict__.update(data)
 
-    def save_config(self, fen):
+    def save_config(self):
+
         with Config.__settings_f.open('w') as fp:
             json.dump(self.__dict__, fp, indent=4, sort_keys=True)
 

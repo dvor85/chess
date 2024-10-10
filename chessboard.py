@@ -7,6 +7,7 @@ from figures.Knight import Knight
 from figures.Queen import Queen
 from figures.Rook import Rook
 from resloader import ResLoader
+import datetime
 import bot
 
 
@@ -54,6 +55,50 @@ class Square:
             display.blit(self.figure.img, centering_rect.topleft)
 
 
+class Timers():
+
+    def __init__(self, board, limit='15:00'):
+        self.limit = limit
+        self.board = board
+
+        self.w_rect = pygame.Rect(self.board.width - 200,
+                            self.board.top_offset,
+                            100,
+                            self.board.top_offset)
+        self.b_rect = pygame.Rect(self.board.width - 100,
+                            self.board.top_offset,
+                            100,
+                            self.board.top_offset)
+        self.reset()
+
+    def reset(self):
+        self.black = datetime.datetime.strptime(self.limit, '%M:%S')
+        self.white = datetime.datetime.strptime(self.limit, '%M:%S')
+
+    def update(self, color, ms):
+        if color == 'w':
+            self.white -= datetime.timedelta(milliseconds=ms)
+        else:
+            self.black -= datetime.timedelta(milliseconds=ms)
+
+    def text(self, color):
+        if color == 'w':
+            return self.white.strftime('%M:%S')
+        else:
+            return self.black.strftime('%M:%S')
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, (255, 255, 255), self.w_rect)
+        pygame.draw.rect(screen, (0, 0, 0), self.b_rect)
+        rl = ResLoader.get_instance()
+
+        white = rl.create_text(self.text('w'), ['Arial'], 20, color=(0, 0, 0))
+        black = rl.create_text(self.text('b'), ['Arial'], 20, color=(255, 255, 255))
+        screen.blits(((white, (self.w_rect.centerx - white.get_width() // 2, self.w_rect.centery - white.get_height() // 2)),
+                           (black, (self.b_rect.centerx - black.get_width() // 2, self.b_rect.centery - black.get_height() // 2)))
+                           )
+
+
 class Board:
 
     DARK_COLOR = (160, 89, 50)
@@ -72,6 +117,7 @@ class Board:
         self.is_player_black = self.cfg.PLAYER_COLOR == 'b'
         self.bot_color = self.invert(self.is_player_black)
         self.bot = bot.Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
+        self.timers = Timers(self, self.cfg.TIME_LIMIT)
 
     def get_coord(self, pos):
         columns = 'abcdefgh'
@@ -91,6 +137,11 @@ class Board:
         self.squares = self.generate_squares()
         self.setup_board()
         self.history = {}
+        self.timers.reset()
+
+    def save_game(self):
+        self.cfg.START_POSITION = self.generate_fen()
+        self.cfg.save_config()
 
     def change_side(self):
         self.turn = self.invert(self.turn)
@@ -122,11 +173,18 @@ class Board:
     def get_figure_from_pos(self, pos):
         return self.get_square_from_pos(pos).figure
 
-    def find_squares_by_figure(self, color, notation=None):
+    def find_squares_by_figure(self, color=None, notation=None):
+
         if notation is not None:
-            return [i for i in self.squares if i.figure is not None and i.figure.color == color and i.figure.notation == notation]
+            if color:
+                return [i for i in self.squares if i.figure is not None and i.figure.color == color and i.figure.notation == notation]
+            else:
+                return [i for i in self.squares if i.figure is not None and i.figure.notation == notation]
         else:
-            return [i for i in self.squares if i.figure is not None and i.figure.color == color]
+            if color:
+                return [i for i in self.squares if i.figure is not None and i.figure.color == color]
+            else:
+                return [i for i in self.squares if i.figure is not None]
 
     def setup_board(self):
         for y, row in enumerate(self.position.split('/')):
@@ -301,4 +359,5 @@ class Board:
             square.draw(display)
 
         self.draw_coords(display)
+        self.timers.draw(display)
 

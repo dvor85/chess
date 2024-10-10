@@ -14,9 +14,10 @@ class Chess():
         self.clock = pygame.time.Clock()
 
         self.board = Board(*Chess.WINDOW_SIZE)
+        self.board.new_game()
+
         self.menu = Menu(self.screen, self.board)
-        self.menu.button('Новая игра', self.board.new_game)
-        self.menu.dropdown("Играть за ...", ['Белых', 'Чёрных'], ('w', 'b'), lambda: 1)
+        self.menu.initialize()
 
         self.running = False
 
@@ -24,36 +25,35 @@ class Chess():
         self.screen.fill(self.board.LIGHT_COLOR)
         self.board.draw(self.screen)
         self.menu.draw(events)
+
         pygame.display.update()
 
     def start_game(self):
 
-        self.board.new_game()
         self.running = True
         while self.running:
             res = False
             events = pygame.event.get()
             self.draw(events)
 
-            if not self.board.game_over and self.board.turn == self.board.bot_color:
-                f, t = self.board.bot.getBestMove()
-                self.board.selected_figure = self.board.get_figure_from_pos(f)
-                self.board.clicked_square = self.board.get_square_from_pos(t)
-
-                res = self.board.selected_figure.move(self.board.clicked_square)
-
-            else:
-
-                mx, my = pygame.mouse.get_pos()
-                for event in events:
-                    # Выход
-                    if event.type == pygame.QUIT:
-                        self.game_over()
-                        self.running = False
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        # нажата кнопка мыши
-                        if event.button == 1:
-                            res = self.board.handle_click(mx, my)
+            if not self.board.game_over:
+                if self.board.turn == self.board.bot_color:
+                # ход бота
+                    b = pygame.time.get_ticks()
+                    f, t = self.board.bot.getBestMove()
+                    self.board.selected_figure = self.board.get_figure_from_pos(f)
+                    self.board.clicked_square = self.board.get_square_from_pos(t)
+                    res = self.board.selected_figure.move(self.board.clicked_square)
+                    self.board.timers.update(self.board.turn, pygame.time.get_ticks() - b)
+                else:
+                    # ход игрока
+                    mx, my = pygame.mouse.get_pos()
+                    for event in events:
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            # нажата кнопка мыши
+                            if event.button == 1:
+                                res = self.board.handle_click(mx, my)
+                    self.board.timers.update(self.board.turn, self.clock.get_time())
 
             if res:
                 to_pos = self.board.clicked_square.pos
@@ -64,9 +64,15 @@ class Chess():
                 self.board.change_side()
                 self.board.selected_figure = None
 
-            result = (self.board.is_in_checkmate('b'), self.board.is_in_checkmate('w'))
-            if any(result):
-                self.game_over(result)
+                result = (self.board.is_in_checkmate('b'), self.board.is_in_checkmate('w'))
+                if any(result):
+                    self.game_over(result)
+
+            for event in events:
+                # Выход
+                if event.type == pygame.QUIT:
+                    self.game_over()
+                    self.running = False
 
             # Доска
             self.draw(events)

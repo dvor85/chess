@@ -94,8 +94,8 @@ class Minimax:
         absoluteValue = getAbsoluteValue()
         return absoluteValue if figure.color == self.player_color else -absoluteValue
 
-    def evaluateBoard(self, color):
-        return sum(self.getFigureValue(s.figure) for s in self.board.find_squares_by_figure(color))
+    def evaluateBoard(self):
+        return sum(self.getFigureValue(s.figure) for s in self.board.find_squares_by_figure())
 
     def minimaxRoot (self, depth, is_maximazing):
         color = self.color if is_maximazing else self.player_color
@@ -125,7 +125,7 @@ class Minimax:
         color = self.color if is_maximazing else self.player_color
 
         if depth == 0:
-            return -self.evaluateBoard(color)
+            return -self.evaluateBoard()
 
         bestMove = -9999 if is_maximazing else 9999
 
@@ -148,10 +148,4 @@ class Minimax:
 
     def getBestMove(self):
         return self.minimaxRoot(self.depth, True)
-
-    def doBestMove(self):
-        f, t = self.getBestMove()
-        figure = self.board.get_figure_from_pos(f)
-        to_square = self.board.get_square_from_pos(t)
-        return figure.move(to_square)
 
