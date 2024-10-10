@@ -11,16 +11,18 @@ _widgets_ = []
 
 class Menu:
 
-    def __init__(self, screen, board):
-        self.screen = screen
+    def __init__(self, board):
+        global _widgets_
+        self.screen = board.screen
         self.board = board
-        self.width = 200
+        self.width = board.panel_width
         self.font = ResLoader.get_instance().get_font(['Arial'], 14)
 
-    def initialize(self):
-        global _widgets_
         _widgets_.append(self.button_new_game())
         _widgets_.append(self.button_save_config())
+
+    def height(self):
+        return _widgets_[-1].getHeight()
 
     def button_new_game(self):
 

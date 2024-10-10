@@ -7,7 +7,7 @@ from figures.Knight import Knight
 from figures.Queen import Queen
 from figures.Rook import Rook
 from resloader import ResLoader
-import datetime
+from infopanel import InfoPanel
 import bot
 
 
@@ -21,6 +21,7 @@ class Square:
         self.width = width
         self.height = height
         self.board = board
+        self.screen = board.screen
 
         self.abs_x = self.board.left_offset + x * width
         self.abs_y = self.board.top_offset + y * height
@@ -38,65 +39,21 @@ class Square:
     def get_pos_from_coord(self, coord):
         return ('abcdefgh'.index(coord[0]), int(coord[1]) - 1)
 
-    def draw(self, display):
-        pygame.draw.rect(display, self.draw_color, self.rect)
+    def draw(self):
+        pygame.draw.rect(self.screen, self.draw_color, self.rect)
         if self.highlight:
-            pygame.draw.rect(display, self.board.HIGHLIGHT_COLOR, self.rect, width=5)
+            pygame.draw.rect(self.screen, self.board.HIGHLIGHT_COLOR, self.rect, width=5)
 
         if self.check:
-            pygame.draw.rect(display, self.board.CHECK_COLOR, self.rect, width=5)
+            pygame.draw.rect(self.screen, self.board.CHECK_COLOR, self.rect, width=5)
 
         if self.checkmate:
-            pygame.draw.rect(display, self.board.CHECK_COLOR, self.rect)
+            pygame.draw.rect(self.screen, self.board.CHECK_COLOR, self.rect)
 
         if self.figure is not None:
             centering_rect = self.figure.img.get_rect()
             centering_rect.center = self.rect.center
-            display.blit(self.figure.img, centering_rect.topleft)
-
-
-class Timers():
-
-    def __init__(self, board, limit='15:00'):
-        self.limit = limit
-        self.board = board
-
-        self.w_rect = pygame.Rect(self.board.width - 200,
-                            self.board.top_offset,
-                            100,
-                            self.board.top_offset)
-        self.b_rect = pygame.Rect(self.board.width - 100,
-                            self.board.top_offset,
-                            100,
-                            self.board.top_offset)
-        self.reset()
-
-    def reset(self):
-        self.black = datetime.datetime.strptime(self.limit, '%M:%S')
-        self.white = datetime.datetime.strptime(self.limit, '%M:%S')
-
-    def update(self, color, ms):
-        if color == 'w':
-            self.white -= datetime.timedelta(milliseconds=ms)
-        else:
-            self.black -= datetime.timedelta(milliseconds=ms)
-
-    def text(self, color):
-        if color == 'w':
-            return self.white.strftime('%M:%S')
-        else:
-            return self.black.strftime('%M:%S')
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, (255, 255, 255), self.w_rect)
-        pygame.draw.rect(screen, (0, 0, 0), self.b_rect)
-        rl = ResLoader.get_instance()
-
-        white = rl.create_text(self.text('w'), ['Arial'], 20, color=(0, 0, 0))
-        black = rl.create_text(self.text('b'), ['Arial'], 20, color=(255, 255, 255))
-        screen.blits(((white, (self.w_rect.centerx - white.get_width() // 2, self.w_rect.centery - white.get_height() // 2)),
-                           (black, (self.b_rect.centerx - black.get_width() // 2, self.b_rect.centery - black.get_height() // 2)))
-                           )
+            self.screen.blit(self.figure.img, centering_rect.topleft)
 
 
 class Board:
@@ -106,26 +63,31 @@ class Board:
     CHECK_COLOR = (160, 10, 10)
     HIGHLIGHT_COLOR = (0, 128, 10)
 
-    def __init__(self, width, height):
+    def __init__(self, screen, width, height):
         self.width = width
         self.height = height
+        self.screen = screen
+        self.panel_width = 200
+
         self.left_offset = 40
         self.top_offset = 40
-        self.tile_width = (width - 200 - 2 * self.left_offset) // 8
+        self.tile_width = (width - self.panel_width - 2 * self.left_offset) // 8
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.cfg = Config.get()
+        self.history = {}
         self.is_player_black = self.cfg.PLAYER_COLOR == 'b'
-        self.bot_color = self.invert(self.is_player_black)
+        self.bot_color = self.invert(self.cfg.PLAYER_COLOR)
+        self.infopanel = InfoPanel(self)
         self.bot = bot.Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
-        self.timers = Timers(self, self.cfg.TIME_LIMIT)
 
     def get_coord(self, pos):
         columns = 'abcdefgh'
         y = str(8 - pos[1]) if not self.is_player_black else str(pos[1] + 1)
         return columns[pos[0]] + y
 
-    def new_game(self):
-        self.game_over = 0
+    def new_game(self, fen=None):
+        self.game_over = False
+        self.message = ''
         self.selected_figure = None
         self.turn = 'w'
         self.castling = '-'
@@ -133,17 +95,32 @@ class Board:
         self.without_attack = 0
         self.moves = 1
 
-        self.parse_fen(self.cfg.START_POSITION)
+        if fen is None:
+            self.history.clear()
+            fen = self.cfg.START_POSITION
+        else:
+            self.history = {k:v for k, v in self.history.items() if k <= self.moves}
+
+        self.parse_fen(fen)
+
         self.squares = self.generate_squares()
         self.setup_board()
-        self.history = {}
-        self.timers.reset()
+
+        self.infopanel.timers.reset()
 
     def save_game(self):
         self.cfg.START_POSITION = self.generate_fen()
         self.cfg.save_config()
 
     def change_side(self):
+        to_pos = self.clicked_square.pos
+        self.update_history(to_pos)
+
+        if self.turn == 'b':
+            self.moves += 1
+
+        self.clear_highlight(True)
+        self.selected_figure = None
         self.turn = self.invert(self.turn)
 
     def invert(self, color):
@@ -248,26 +225,35 @@ class Board:
             move['fen'] = self.generate_fen()
         print(move)
 
+    def clear_highlight(self, clear_check=False):
+        for i in self.squares:
+            i.highlight = False
+            if clear_check:
+                i.check = False
+
     def handle_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
         if self.is_player_black:
             y = 7 - y
 
-        self.clicked_square = self.get_square_from_pos((x, y))
-        if not self.clicked_square is None:
-            print(self.clicked_square.pos)
-            for i in self.squares:
-                i.highlight = False
-                i.check = False
+        if 0 <= x <= 7 and 0 <= y <= 7:
+            self.clicked_square = self.get_square_from_pos((x, y))
+            if not self.clicked_square is None:
+                print(self.clicked_square.pos)
+                self.clear_highlight()
+                if not self.clicked_square.figure is None:
+                    if self.clicked_square.figure.color == self.turn:
+                        self.selected_figure = self.clicked_square.figure
+                        return
 
-            if not self.clicked_square.figure is None:
-                if self.clicked_square.figure.color == self.turn:
-                    self.selected_figure = self.clicked_square.figure
-                    return
-
-            if not self.selected_figure is None:
-                return self.selected_figure.move(self.clicked_square)
+                if not self.selected_figure is None:
+                    return self.selected_figure.move(self.clicked_square)
+        else:
+            for h in self.history.values():
+                if abs(my - h.get('y', 0)) <= 15:
+                    if 'fen' in h:
+                        self.new_game(h['fen'])
 
     def virtual_move(self, from_to, on_moved, *args):  # from_to = [(x1, y1), (x2, y2)]
         old_square = self.get_square_from_pos(from_to[0])
@@ -293,7 +279,7 @@ class Board:
             if kings:
                 king_pos = kings[0].pos
 
-            for enemy_squares in self.find_squares_by_figure('b' if color == 'w' else 'w'):
+            for enemy_squares in self.find_squares_by_figure(self.invert(color)):
                 for square in enemy_squares.figure.attacking_squares():
                     if square.pos == king_pos:
                         return True
@@ -326,29 +312,29 @@ class Board:
 
         return result
 
-    def draw_coords(self, display):
+    def draw_coords(self):
 
         border = pygame.Rect(self.left_offset, self.top_offset, self.tile_width * 8, self.tile_height * 8)
-        pygame.draw.rect(display, self.DARK_COLOR, border, width=5)
+        pygame.draw.rect(self.screen, self.DARK_COLOR, border, width=5)
 
         border = pygame.Rect(0, 0, 2 * self.left_offset + self.tile_width * 8, 2 * self.top_offset + self.tile_height * 8)
-        pygame.draw.rect(display, self.DARK_COLOR, border, width=5)
+        pygame.draw.rect(self.screen, self.DARK_COLOR, border, width=5)
 
         for i, c in enumerate('abcdefgh', 1):
             text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
-            display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
+            self.screen.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 self.top_offset + self.tile_height * 8 + text.get_height() // 2))
-            display.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
+            self.screen.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 (self.top_offset - text.get_height()) // 2))
 
         for i, c in enumerate('87654321' if not self.is_player_black else '12345678', 1):
             text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
-            display.blit(text, ((self.left_offset - text.get_width()) // 2,
+            self.screen.blit(text, ((self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
-            display.blit(text, (self.left_offset + self.tile_width * 8 + (self.left_offset - text.get_width()) // 2,
+            self.screen.blit(text, (self.left_offset + self.tile_width * 8 + (self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
 
-    def draw(self, display):
+    def draw(self, events):
 
         if self.selected_figure is not None:
             self.get_square_from_pos(self.selected_figure.pos).highlight = True
@@ -356,8 +342,9 @@ class Board:
                 square.highlight = True
 
         for square in self.squares:
-            square.draw(display)
+            square.draw()
 
-        self.draw_coords(display)
-        self.timers.draw(display)
+        self.draw_coords()
+
+        self.infopanel.draw(events)
 

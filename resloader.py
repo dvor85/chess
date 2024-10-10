@@ -20,28 +20,28 @@ class ResLoader:
     def getImage(self, path):
         return self._cached_images.setdefault(Path(path).name, pygame.image.load(path))
 
-    def make_font(self, fonts, size):
+    def make_font(self, fonts, size, bold=False):
         available = pygame.font.get_fonts()
         # get_fonts() returns a list of lowercase spaceless font names
         choices = map(lambda x:x.lower().replace(' ', ''), fonts)
         for choice in choices:
             if choice in available:
-                return pygame.font.SysFont(choice, size)
+                return pygame.font.SysFont(choice, size, bold=bold)
         return pygame.font.Font(None, size)
 
-    def get_font(self, font_preferences, size):
-        key = str(font_preferences) + '|' + str(size)
+    def get_font(self, font_preferences, size, bold=False):
+        key = str(font_preferences) + '|' + str(size) + str(bold)
         font = self._cached_fonts.get(key, None)
         if font == None:
-            font = self.make_font(font_preferences, size)
+            font = self.make_font(font_preferences, size, bold)
             self._cached_fonts[key] = font
         return font
 
-    def create_text(self, text, fonts, size, color):
-        key = '|'.join(map(str, (fonts, size, color, text)))
+    def create_text(self, text, fonts, size, color, bold=False):
+        key = '|'.join(map(str, (fonts, size, color, bold, text)))
         image = self._cached_text.get(key, None)
         if image == None:
-            font = self.get_font(fonts, size)
+            font = self.get_font(fonts, size, bold)
             image = font.render(text, True, color)
             self._cached_text[key] = image
         return image

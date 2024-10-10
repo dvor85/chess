@@ -42,11 +42,13 @@ class Figure:
             if self.notation == 'K':
                 if prev_square.x - self.x == 2:
                     rook = self.board.get_figure_from_pos((0, self.y))
-                    rook.move(self.board.get_square_from_pos((3, self.y)), force=True)
+                    if rook:
+                        rook.move(self.board.get_square_from_pos((3, self.y)), force=True)
 
                 elif prev_square.x - self.x == -2:
                     rook = self.board.get_figure_from_pos((7, self.y))
-                    rook.move(self.board.get_square_from_pos((5, self.y)), force=True)
+                    if rook:
+                        rook.move(self.board.get_square_from_pos((5, self.y)), force=True)
 
                 if self.board.castling != '-':
                     if self.color == 'w':
