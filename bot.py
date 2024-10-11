@@ -7,7 +7,7 @@ class Minimax:
         self.player_color = board.cfg.PLAYER_COLOR
 
         self.pawnEval = [
-                [6.0, 7.0, 7.0, 7.5, 7.5, 7.0, 7.0, 6.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
                 [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
                 [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
@@ -79,17 +79,17 @@ class Minimax:
 
         def getAbsoluteValue():
             if figure.notation == 'P':
-                return 10 + (self.pawnEval[y][x] if figure.color == self.player_color else self.pawnEval[7 - y][x])
+                return 10 + (self.pawnEval[y][x] if figure.color == 'w' else self.pawnEval[7 - y][x])
             elif figure.notation == 'R':
-                return 50 + (self.rookEval[y][x] if figure.color == self.player_color else self.rookEval[7 - y][x])
+                return 50 + (self.rookEval[y][x] if figure.color == 'w' else self.rookEval[7 - y][x])
             elif figure.notation == 'N':
-                return 30 + self.knightEval[y][x]
+                return 32 + self.knightEval[y][x]
             elif figure.notation == 'B':
-                return 30 + (self.bishopEval[y][x] if figure.color == self.player_color else self.bishopEval[7 - y][x])
+                return 33 + (self.bishopEval[y][x] if figure.color == 'w' else self.bishopEval[7 - y][x])
             elif figure.notation == 'Q':
                 return 90 + self.evalQueen[y][x];
             elif figure.notation == 'K':
-                return 900 + (self.kingEval[y][x] if figure.color == self.player_color else  self.kingEval[7 - y][x])
+                return 900 + (self.kingEval[y][x] if figure.color == 'w' else  self.kingEval[7 - y][x])
 
         absoluteValue = getAbsoluteValue()
         return absoluteValue if figure.color == self.player_color else -absoluteValue
@@ -99,6 +99,7 @@ class Minimax:
 
     def minimaxRoot (self, depth, is_maximazing):
         color = self.color if is_maximazing else self.player_color
+#         color = self.player_color if is_maximazing else self.color
         all_moves = self.board.all_valid_moves(color)
         bestMove = -9999
         bestMoveFound = None, None
@@ -112,11 +113,13 @@ class Minimax:
                     bestMove = value
                     bestMoveFound = f_pos, new_pos;
 
+        print(f"color = {color}; bestMove = {bestMove}")
+
         return bestMoveFound;
 
     def minimax (self, depth, alpha, beta, is_maximazing):
 
-        def hook():
+        def on_moved():
             if is_maximazing:
                 return  max(bestMove, self.minimax(depth - 1, alpha, beta, not is_maximazing))
             else:
@@ -124,6 +127,7 @@ class Minimax:
 
         color = self.color if is_maximazing else self.player_color
 
+#         color = self.player_color if is_maximazing else self.color
         if depth == 0:
             return -self.evaluateBoard()
 
@@ -133,16 +137,15 @@ class Minimax:
         for f_pos, squares in all_moves.items():
             for square in squares:
                 if is_maximazing:
-                    bestMove = self.board.virtual_move([f_pos, square.pos], hook)
+                    bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
                     alpha = max(alpha, bestMove);
-                    if (beta <= alpha):
-                        return bestMove
 
                 else:
-                    bestMove = self.board.virtual_move([f_pos, square.pos], hook)
+                    bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
                     beta = min(beta, bestMove);
-                    if (beta <= alpha):
-                        return bestMove
+
+                if (beta <= alpha):
+                    return bestMove
 
         return bestMove
 

@@ -1,5 +1,6 @@
 import pygame
 from chessboard import Board
+import datetime
 
 
 class Chess():
@@ -35,11 +36,13 @@ class Chess():
                 if self.board.turn == self.board.bot_color:
                 # ход бота
                     b = pygame.time.get_ticks()
+                    self.clock.get_time()
                     f, t = self.board.bot.getBestMove()
                     self.board.selected_figure = self.board.get_figure_from_pos(f)
                     self.board.clicked_square = self.board.get_square_from_pos(t)
                     res = self.board.selected_figure.move(self.board.clicked_square)
                     self.board.infopanel.timers.update(self.board.turn, pygame.time.get_ticks() - b)
+#                     print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))
                 else:
                     # ход игрока
                     mx, my = pygame.mouse.get_pos()
@@ -47,10 +50,12 @@ class Chess():
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             # нажата кнопка мыши
                             if event.button == 1:
-                                res = self.board.handle_click(mx, my)
+                                res = self.board.on_click(mx, my)
                     self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
+                    print('player ', datetime.timedelta(milliseconds=self.clock.get_time()))
 
             if res:
+#                 print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))
                 self.board.change_side()
 
                 result = (self.board.is_in_checkmate('b'), self.board.is_in_checkmate('w'))

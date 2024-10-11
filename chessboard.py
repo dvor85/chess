@@ -206,22 +206,19 @@ class Board:
                     if skip > 0:
                         row += str(skip)
                         skip = 0
-                    if figure.color == 'w':
-                        row += figure.notation
-                    else:
-                        row += figure.notation.lower()
+                    row += str(figure)
                 else:
                     skip += 1
 
             if skip > 0:
                 row += str(skip)
             fen.append(row)
-        return '/'.join(fen) + f" {self.turn} {self.castling} {self.pawn_2go} {self.without_attack} {self.moves}"
+        return '/'.join(fen) + f" {self.invert(self.turn)} {self.castling} {self.pawn_2go} {self.without_attack} {self.moves}"
 
     def update_history(self, to_pos):
         move = self.history.setdefault(self.moves, {})
         move[self.turn] = str(self.selected_figure) + f'{self.get_coord(to_pos)}'
-        if self.turn == 'b':
+        if self.turn == 'w':
             move['fen'] = self.generate_fen()
         print(move)
 
@@ -231,7 +228,7 @@ class Board:
             if clear_check:
                 i.check = False
 
-    def handle_click(self, mx, my):
+    def on_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
         if self.is_player_black:
@@ -254,6 +251,7 @@ class Board:
                 if abs(my - h.get('y', 0)) <= 15:
                     if 'fen' in h:
                         self.new_game(h['fen'])
+                        return
 
     def virtual_move(self, from_to, on_moved, *args):  # from_to = [(x1, y1), (x2, y2)]
         old_square = self.get_square_from_pos(from_to[0])
