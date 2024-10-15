@@ -23,7 +23,7 @@ class Chess():
     def draw(self, events):
         if self.bot_thread is None:
             self.screen.fill(self.board.LIGHT_COLOR)
-            self.board.draw(events)
+            self.board.draw()
 
         self.board.infopanel.draw(events, self.bot_thread is not None)
 
@@ -38,7 +38,7 @@ class Chess():
             events = pygame.event.get()
             self.draw(events)
 
-            if not self.board.game_over:
+            if self.board.game_result == 0:
                 if self.board.turn == self.board.bot_color:
                 # ход бота
                     if self.bot_thread is None:
@@ -63,37 +63,26 @@ class Chess():
 
                 self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
 
-            if res:
-                print(f"Оценка позиции {self.board.turn} = ", -self.board.bot.evaluateBoard())
-                self.board.change_side()
+                if res:
+                    print(f"Оценка позиции {self.board.turn} = ", -self.board.bot.evaluateBoard())
+                    self.board.change_side()
 
-                result = (self.board.is_in_checkmate('b'), self.board.is_in_checkmate('w'))
-                if self.board.without_attack > 50:
-                    result = (1, 1)
+                    self.board.game_result = 2 * (self.board.is_in_checkmate("b") - self.board.is_in_checkmate("w"))
+                    if self.board.without_attack > 50:
+                        self.board.game_result = 1
 
-                if any(result):
-                    self.game_over(result)
+            else:
+                self.board.game_over(self.board.game_result)
 
             for event in events:
                 # Выход
                 if event.type == pygame.QUIT:
-                    self.game_over()
+                    self.board.game_over()
                     self.running = False
 
             self.clock.tick(30)
 
-    def game_over(self, result=None):
-
-        if result:
-            self.board.game_over = True
-            if 1 in result:
-                self.board.message = f'Пат!'
-            elif 2 in result:
-                if not result.index(2):
-                    self.board.message = f'Мат черным!'
-                else:
-                    self.board.message = f'Мат белым!'
-            print(self.board.message)
+#             print(self.board.message)
 
 
 if __name__ == '__main__':

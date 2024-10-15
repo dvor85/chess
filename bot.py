@@ -132,16 +132,17 @@ class Minimax:
         all_moves = self.board.all_valid_moves(color)
         for f_pos, squares in all_moves.items():
             for square in squares:
-                if is_maximazing:
-                    bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
-                    alpha = max(alpha, bestMove);
+                if self.board.game_result == 0:
+                    if is_maximazing:
+                        bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
+                        alpha = max(alpha, bestMove);
 
-                else:
-                    bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
-                    beta = min(beta, bestMove);
+                    else:
+                        bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
+                        beta = min(beta, bestMove);
 
-                if (beta <= alpha):
-                    return bestMove
+                    if (beta <= alpha):
+                        return bestMove
 
         return bestMove
 

@@ -25,8 +25,8 @@ class Timers():
         return self.w_rect.height
 
     def reset(self):
-        self.black = datetime.datetime.strptime(self.limit, '%M:%S')
-        self.white = datetime.datetime.strptime(self.limit, '%M:%S')
+        self.black = datetime.timedelta(minutes=self.limit)
+        self.white = datetime.timedelta(minutes=self.limit)
 
     def update(self, color, ms):
         if color == 'w':
@@ -34,11 +34,27 @@ class Timers():
         else:
             self.black -= datetime.timedelta(milliseconds=ms)
 
+        if self.white.total_seconds() <= 0:
+            self.board.game_result = -3
+        elif self.black.total_seconds() <= 0:
+            self.board.game_result = 3
+
+    def _conv(self, td):
+        seconds = int(td.total_seconds())
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        return hours, minutes, seconds
+
+    def fmt(self, td):
+        dt = self._conv(td)
+        return f"{dt[1]:0>2}:{dt[2]:0>2}"
+
     def text(self, color):
         if color == 'w':
-            return self.white.strftime('%M:%S')
+            return self.fmt(self.white)
         else:
-            return self.black.strftime('%M:%S')
+            return self.fmt(self.black)
 
     def draw(self):
         pygame.draw.rect(self.screen, (255, 255, 255), self.w_rect)
@@ -93,7 +109,7 @@ class InfoPanel:
     def draw_message(self, text=None):
         if text:
             rl = ResLoader.get_instance()
-            msg = rl.create_text(text, ['Arial'], 20, color=(200, 0, 0), bold=True)
+            msg = rl.create_text(text, ['Arial'], 16, color=(200, 0, 0), bold=True)
             self.screen.blit(msg, (self.panel.centerx - msg.get_width() // 2,
                                     self.history_height))
 
@@ -102,6 +118,6 @@ class InfoPanel:
         if not bot_thread:
             self.menu.draw(events)
             self.draw_history()
-            self.draw_message(self.board.message)
+        self.draw_message(self.board.message)
         pygame.draw.rect(self.screen, self.board.DARK_COLOR, self.panel, width=5)
 

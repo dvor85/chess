@@ -17,7 +17,7 @@ class Square:
 
         self.x = x
         # инвертировать доску
-        self.y = 7 - y if board.is_player_black else y
+        self.y = y if board.player_color == 'w' else 7 - y
         self.width = width
         self.height = height
         self.board = board
@@ -75,19 +75,18 @@ class Board:
         self.tile_height = (height - 2 * self.top_offset) // 8
         self.cfg = Config.get()
         self.history = {}
-        self.is_player_black = self.cfg.PLAYER_COLOR == 'b'
-        self.bot_color = self.invert(self.cfg.PLAYER_COLOR)
+        self.player_color = self.cfg.PLAYER_COLOR
+        self.bot_color = self.invert(self.player_color)
         self.infopanel = InfoPanel(self)
         self.level = self.cfg.DIFFICULTY if self.cfg.DIFFICULTY > 0 else 1
         self.bot = bot.Minimax(self, self.bot_color, self.level)
 
     def get_coord(self, pos):
         columns = 'abcdefgh'
-        y = str(8 - pos[1]) if not self.is_player_black else str(pos[1] + 1)
-        return columns[pos[0]] + y
+        return columns[pos[0]] + str(8 - pos[1])
 
     def new_game(self, fen=None):
-        self.game_over = False
+        self.game_result = 0
         self.message = ''
         self.selected_figure = None
         self.turn = 'w'
@@ -112,6 +111,20 @@ class Board:
     def save_game(self):
         self.cfg.START_POSITION = self.generate_fen()
         self.cfg.save_config()
+
+    def game_over(self, result=None):
+        if result:
+            self.game_result = result
+            if result == 1:
+                self.message = f'Пат!'
+            elif result == 2:
+                self.message = f'Мат черным!'
+            elif result == -2:
+                self.message = f'Мат белым!'
+            elif result == 3:
+                self.message = f'Время черных вышло!'
+            elif result == -3:
+                self.message = f'Время белых вышло!'
 
     def change_side(self):
         to_pos = self.clicked_square.pos
@@ -145,7 +158,7 @@ class Board:
         return square
 
     def __call__(self, pos):
-        y = pos[1] if not self.is_player_black else 7 - pos[1]
+        y = pos[1] if self.player_color == 'w' else 7 - pos[1]
         return self.squares[y * 8 + pos[0]]
 
     def find_squares_by_figure(self, color=None, notation=None):
@@ -219,7 +232,8 @@ class Board:
         move[self.turn] = str(self.selected_figure) + f'{self.get_coord(to_pos)}'
         if self.turn == 'w':
             move['fen'] = self.generate_fen()
-        print(move)
+        else:
+            print(move)
 
     def clear_highlight(self, clear_check=False):
         for i in self.squares:
@@ -230,7 +244,7 @@ class Board:
     def on_click(self, mx, my):
         x = (mx - self.left_offset) // self.tile_width
         y = (my - self.top_offset) // self.tile_height
-        if self.is_player_black:
+        if self.player_color == 'b':
             y = 7 - y
 
         if 0 <= x <= 7 and 0 <= y <= 7:
@@ -322,21 +336,23 @@ class Board:
         border = pygame.Rect(0, 0, 2 * self.left_offset + self.tile_width * 8, 2 * self.top_offset + self.tile_height * 8)
         pygame.draw.rect(self.screen, self.DARK_COLOR, border, width=5)
 
+        rl = ResLoader.get_instance()
         for i, c in enumerate('abcdefgh', 1):
-            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
+            text = rl.create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
             self.screen.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 self.top_offset + self.tile_height * 8 + text.get_height() // 2))
+
             self.screen.blit(text, (self.left_offset + i * self.tile_width - (self.tile_width + text.get_width()) // 2,
                                 (self.top_offset - text.get_height()) // 2))
 
-        for i, c in enumerate('87654321' if not self.is_player_black else '12345678', 1):
-            text = ResLoader.get_instance().create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
+        for i, c in enumerate('87654321' if self.player_color == 'w' else '12345678', 1):
+            text = rl.create_text(c, ['Arial'], 20, color=self.DARK_COLOR)
             self.screen.blit(text, ((self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
             self.screen.blit(text, (self.left_offset + self.tile_width * 8 + (self.left_offset - text.get_width()) // 2,
                                 self.top_offset + i * self.tile_height - (self.tile_height + text.get_height()) // 2))
 
-    def draw(self, events):
+    def draw(self):
 
         if self.selected_figure is not None:
             self(self.selected_figure.pos).highlight = True
