@@ -14,28 +14,28 @@ class Bishop(Figure.Figure):
         for i in range(1, 8):
             if self.x + i > 7 or self.y - i < 0:
                 break
-            moves_ne.append(self.board.get_square_from_pos((self.x + i, self.y - i)))
+            moves_ne.append(self.board((self.x + i, self.y - i)))
         avail.append(moves_ne)
 
         moves_se = []
         for i in range(1, 8):
             if self.x + i > 7 or self.y + i > 7:
                 break
-            moves_se.append(self.board.get_square_from_pos((self.x + i, self.y + i)))
+            moves_se.append(self.board((self.x + i, self.y + i)))
         avail.append(moves_se)
 
         moves_sw = []
         for i in range(1, 8):
             if self.x - i < 0 or self.y + i > 7:
                 break
-            moves_sw.append(self.board.get_square_from_pos((self.x - i, self.y + i)))
+            moves_sw.append(self.board((self.x - i, self.y + i)))
         avail.append(moves_sw)
 
         moves_nw = []
         for i in range(1, 8):
             if self.x - i < 0 or self.y - i < 0:
                 break
-            moves_nw.append(self.board.get_square_from_pos((self.x - i, self.y - i)))
+            moves_nw.append(self.board((self.x - i, self.y - i)))
         avail.append(moves_nw)
 
         return avail

@@ -12,22 +12,22 @@ class Rook(Figure.Figure):
 
         moves_north = []
         for y in range(self.y)[::-1]:
-            moves_north.append(self.board.get_square_from_pos((self.x, y)))
+            moves_north.append(self.board((self.x, y)))
         avail.append(moves_north)
 
         moves_east = []
         for x in range(self.x + 1, 8):
-            moves_east.append(self.board.get_square_from_pos((x, self.y)))
+            moves_east.append(self.board((x, self.y)))
         avail.append(moves_east)
 
         moves_south = []
         for y in range(self.y + 1, 8):
-            moves_south.append(self.board.get_square_from_pos((self.x, y)))
+            moves_south.append(self.board((self.x, y)))
         avail.append(moves_south)
 
         moves_west = []
         for x in range(self.x)[::-1]:
-            moves_west.append(self.board.get_square_from_pos((x, self.y)))
+            moves_west.append(self.board((x, self.y)))
         avail.append(moves_west)
 
         return avail

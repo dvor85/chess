@@ -143,12 +143,12 @@ class Board:
                 square.append(Square(x, y, self.tile_width, self.tile_height, self))
         return square
 
-    def get_square_from_pos(self, pos):
+    def __call__(self, pos):
         y = pos[1] if not self.is_player_black else 7 - pos[1]
         return self.squares[y * 8 + pos[0]]
 
     def get_figure_from_pos(self, pos):
-        return self.get_square_from_pos(pos).figure
+        return self(pos).figure
 
     def find_squares_by_figure(self, color=None, notation=None):
 
@@ -169,7 +169,7 @@ class Board:
             irow = iter(row)
             while x < 8:
                 figure = next(irow, '')
-                square = self.get_square_from_pos((x, y))
+                square = self((x, y))
                 if figure.isdigit():
                     x += int(figure)
                 else:
@@ -192,6 +192,7 @@ class Board:
                     elif figure in 'Pp':
                         square.figure = Pawn((x, y), color, self)
                     x += 1
+                    print(f"figure: {square.figure} {square.figure.pos}.")
 
     def generate_fen(self):
         fen = []
@@ -235,11 +236,14 @@ class Board:
             y = 7 - y
 
         if 0 <= x <= 7 and 0 <= y <= 7:
-            self.clicked_square = self.get_square_from_pos((x, y))
+            self.clicked_square = self((x, y))
             if not self.clicked_square is None:
                 print(self.clicked_square.pos)
+
                 self.clear_highlight()
                 if not self.clicked_square.figure is None:
+                    print(f'value of {self.clicked_square.figure}', self.bot.getFigureValue(self.clicked_square.figure))
+                    print(f'state of board ', self.bot.evaluateBoard())
                     if self.clicked_square.figure.color == self.turn:
                         self.selected_figure = self.clicked_square.figure
                         return
@@ -254,13 +258,14 @@ class Board:
                         return
 
     def virtual_move(self, from_to, on_moved, *args):  # from_to = [(x1, y1), (x2, y2)]
-        old_square = self.get_square_from_pos(from_to[0])
+        old_square = self(from_to[0])
         changing_figure = old_square.figure
         old_square.figure = None
 
-        new_square = self.get_square_from_pos(from_to[1])
+        new_square = self(from_to[1])
         new_square_old_figure = new_square.figure
         new_square.figure = changing_figure
+        new_square.figure.set_pos(from_to[1])
 
         try:
             if callable(on_moved):
@@ -268,7 +273,10 @@ class Board:
 
         finally:
             old_square.figure = changing_figure
+            old_square.figure.set_pos(from_to[0])
             new_square.figure = new_square_old_figure
+            if new_square_old_figure is not None:
+                new_square.figure.set_pos(from_to[1])
 
     def is_in_check(self, color, from_to=None):  # from_to = [(x1, y1), (x2, y2)]
 
@@ -335,7 +343,7 @@ class Board:
     def draw(self, events):
 
         if self.selected_figure is not None:
-            self.get_square_from_pos(self.selected_figure.pos).highlight = True
+            self(self.selected_figure.pos).highlight = True
             for square in self.selected_figure.get_valid_moves():
                 square.highlight = True
 

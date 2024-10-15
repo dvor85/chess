@@ -1,6 +1,5 @@
 import pygame
 from chessboard import Board
-import datetime
 
 
 class Chess():
@@ -39,12 +38,12 @@ class Chess():
                     self.clock.get_time()
                     f, t = self.board.bot.getBestMove()
                     self.board.selected_figure = self.board.get_figure_from_pos(f)
-                    self.board.clicked_square = self.board.get_square_from_pos(t)
+                    self.board.clicked_square = self.board(t)
                     res = self.board.selected_figure.move(self.board.clicked_square)
                     self.board.infopanel.timers.update(self.board.turn, pygame.time.get_ticks() - b)
 #                     print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))
                 else:
-                    # ход игрока
+#                   ход игрока
                     mx, my = pygame.mouse.get_pos()
                     for event in events:
                         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -52,7 +51,7 @@ class Chess():
                             if event.button == 1:
                                 res = self.board.on_click(mx, my)
                     self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
-                    print('player ', datetime.timedelta(milliseconds=self.clock.get_time()))
+    #                     print('player ', datetime.timedelta(milliseconds=self.clock.get_time()))
 
             if res:
 #                 print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))

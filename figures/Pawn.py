@@ -25,7 +25,7 @@ class Pawn(Figure.Figure):
 
         for move in moves:
             if 8 > self.y + move[1] >= 0:
-                avail.append(self.board.get_square_from_pos((self.x, self.y + move[1])))
+                avail.append(self.board((self.x, self.y + move[1])))
 
         return avail
 
@@ -39,24 +39,24 @@ class Pawn(Figure.Figure):
 
         if self.color == 'w':
             if self.x + 1 < 8 and self.y - 1 >= 0:
-                square = self.board.get_square_from_pos((self.x + 1, self.y - 1))
+                square = self.board((self.x + 1, self.y - 1))
                 if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y - 1 >= 0:
-                square = self.board.get_square_from_pos((self.x - 1, self.y - 1))
+                square = self.board((self.x - 1, self.y - 1))
                 if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
 
         elif self.color == 'b':
             if self.x + 1 < 8 and self.y + 1 < 8:
-                square = self.board.get_square_from_pos((self.x + 1, self.y + 1))
+                square = self.board((self.x + 1, self.y + 1))
                 if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)
             if self.x - 1 >= 0 and self.y + 1 < 8:
-                square = self.board.get_square_from_pos((self.x - 1, self.y + 1))
+                square = self.board((self.x - 1, self.y + 1))
                 if square.figure is not None:
                     if square.figure.color != self.color:
                         avail.append(square)

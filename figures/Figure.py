@@ -5,8 +5,7 @@ from resloader import ResLoader
 class Figure:
 
     def __init__(self, pos, color, board):
-        self.pos = pos
-        self.x, self.y = pos
+        self.set_pos(pos)
         self.color = color
         self.board = board
         self.has_moved = False
@@ -17,14 +16,17 @@ class Figure:
         fig = self.notation if self.color == 'w' else self.notation.lower()
         return fig
 
+    def set_pos(self, pos):
+        self.pos = pos
+        self.x, self.y = pos
+
     def move(self, to_square, force=False):
         if to_square in self.get_valid_moves() or force:
-            prev_square = self.board.get_square_from_pos(self.pos)
+            prev_square = self.board((self.x, self.y))
             self.pos, self.x, self.y = to_square.pos, to_square.x, to_square.y
 
             prev_square.figure = None
             to_square.figure = self
-#             self.board.selected_figure = None
             self.has_moved = True
             self.board.pawn_2go = '-'
 
@@ -36,28 +38,27 @@ class Figure:
                 # ход пешкой на два поля
                 if abs(prev_square.y - self.y) == 2:
                     y = 5 if self.color == 'w' else 2
-                    self.board.pawn_2go = self.board.get_square_from_pos((self.x, y)).coord
+                    self.board.pawn_2go = self.board((self.x, y)).coord
 
             # Рокировка
-            if self.notation == 'K':
-                if prev_square.x - self.x == 2:
-                    rook = self.board.get_figure_from_pos((0, self.y))
-                    if rook:
-                        rook.move(self.board.get_square_from_pos((3, self.y)), force=True)
+            if self.board.castling != '-':
+                if self.notation == 'K':
+                    if prev_square.x - self.x == 2:
+                        rook = self.board.get_figure_from_pos((0, self.y))
+                        if rook:
+                            rook.move(self.board((3, self.y)), force=True)
 
-                elif prev_square.x - self.x == -2:
-                    rook = self.board.get_figure_from_pos((7, self.y))
-                    if rook:
-                        rook.move(self.board.get_square_from_pos((5, self.y)), force=True)
+                    elif prev_square.x - self.x == -2:
+                        rook = self.board.get_figure_from_pos((7, self.y))
+                        if rook:
+                            rook.move(self.board((5, self.y)), force=True)
 
-                if self.board.castling != '-':
                     if self.color == 'w':
                         self.board.castling = self.board.castling.replace('KQ', '')
                     else:
                         self.board.castling = self.board.castling.replace('kq', '')
 
-            if self.notation == 'R':
-                if self.board.castling != '-':
+                if self.notation == 'R':
                     if self.color == 'w':
                         if prev_square.x == 0:
                             self.board.castling = self.board.castling.replace('Q', '')
