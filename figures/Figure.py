@@ -44,12 +44,12 @@ class Figure:
             if self.board.castling != '-':
                 if self.notation == 'K':
                     if prev_square.x - self.x == 2:
-                        rook = self.board.get_figure_from_pos((0, self.y))
+                        rook = self.board((0, self.y)).figure
                         if rook:
                             rook.move(self.board((3, self.y)), force=True)
 
                     elif prev_square.x - self.x == -2:
-                        rook = self.board.get_figure_from_pos((7, self.y))
+                        rook = self.board((7, self.y)).figure
                         if rook:
                             rook.move(self.board((5, self.y)), force=True)
 

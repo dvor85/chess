@@ -78,7 +78,8 @@ class Board:
         self.is_player_black = self.cfg.PLAYER_COLOR == 'b'
         self.bot_color = self.invert(self.cfg.PLAYER_COLOR)
         self.infopanel = InfoPanel(self)
-        self.bot = bot.Minimax(self, self.bot_color, self.cfg.DIFFICULTY)
+        self.level = self.cfg.DIFFICULTY if self.cfg.DIFFICULTY > 0 else 1
+        self.bot = bot.Minimax(self, self.bot_color, self.level)
 
     def get_coord(self, pos):
         columns = 'abcdefgh'
@@ -98,10 +99,10 @@ class Board:
         if fen is None:
             self.history.clear()
             fen = self.cfg.START_POSITION
-        else:
-            self.history = {k:v for k, v in self.history.items() if k <= self.moves}
 
         self.parse_fen(fen)
+
+        self.history = {k:v for k, v in self.history.items() if k <= self.moves}
 
         self.squares = self.generate_squares()
         self.setup_board()
@@ -147,9 +148,6 @@ class Board:
         y = pos[1] if not self.is_player_black else 7 - pos[1]
         return self.squares[y * 8 + pos[0]]
 
-    def get_figure_from_pos(self, pos):
-        return self(pos).figure
-
     def find_squares_by_figure(self, color=None, notation=None):
 
         if notation is not None:
@@ -192,7 +190,7 @@ class Board:
                     elif figure in 'Pp':
                         square.figure = Pawn((x, y), color, self)
                     x += 1
-                    print(f"figure: {square.figure} {square.figure.pos}.")
+#                     print(f"figure: {square.figure} {square.figure.pos}.")
 
     def generate_fen(self):
         fen = []
@@ -202,7 +200,7 @@ class Board:
             row = ''
             skip = 0
             for x in range(8):
-                figure = self.get_figure_from_pos((x, y))
+                figure = self((x, y)).figure
                 if figure is not None:
                     if skip > 0:
                         row += str(skip)
@@ -238,12 +236,10 @@ class Board:
         if 0 <= x <= 7 and 0 <= y <= 7:
             self.clicked_square = self((x, y))
             if not self.clicked_square is None:
-                print(self.clicked_square.pos)
+#                 print(self.clicked_square.pos)
 
                 self.clear_highlight()
                 if not self.clicked_square.figure is None:
-                    print(f'value of {self.clicked_square.figure}', self.bot.getFigureValue(self.clicked_square.figure))
-                    print(f'state of board ', self.bot.evaluateBoard())
                     if self.clicked_square.figure.color == self.turn:
                         self.selected_figure = self.clicked_square.figure
                         return
@@ -351,6 +347,4 @@ class Board:
             square.draw()
 
         self.draw_coords()
-
-        self.infopanel.draw(events)
 

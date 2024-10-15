@@ -78,17 +78,14 @@ class InfoPanel:
 
             if 'w' in h:
                 m_text = rl.create_text(f"{m}.", ['Arial'], 16, color=self.board.DARK_COLOR, bold=True)
-                self.screen.blit(m_text, (self.panel.left + 10,
-                                      h['y']))
+                self.screen.blit(m_text, (self.panel.left + 10, h['y']))
 
                 w_text = rl.create_text(f"{h['w']}", ['Arial'], 16, color=self.board.DARK_COLOR, bold=True)
-                self.screen.blit(w_text, (self.panel.centerx - self.width // 4 - w_text.get_width() // 2,
-                                      h['y']))
+                self.screen.blit(w_text, (self.panel.centerx - self.width // 4 - w_text.get_width() // 2, h['y']))
 
                 if 'b' in h:
                     b_text = rl.create_text(f"{h['b']}", ['Arial'], 16, color=self.board.DARK_COLOR, bold=True)
-                    self.screen.blit(b_text, (self.panel.centerx + self.width // 4 - b_text.get_width() // 2,
-                                          h['y']))
+                    self.screen.blit(b_text, (self.panel.centerx + self.width // 4 - b_text.get_width() // 2, h['y']))
                 y += m_text.get_height()
 
         self.history_height = y
@@ -100,10 +97,11 @@ class InfoPanel:
             self.screen.blit(msg, (self.panel.centerx - msg.get_width() // 2,
                                     self.history_height))
 
-    def draw(self, events):
-        self.menu.draw(events)
+    def draw(self, events, bot_thread=False):
         self.timers.draw()
-        self.draw_history()
-        self.draw_message(self.board.message)
+        if not bot_thread:
+            self.menu.draw(events)
+            self.draw_history()
+            self.draw_message(self.board.message)
         pygame.draw.rect(self.screen, self.board.DARK_COLOR, self.panel, width=5)
 

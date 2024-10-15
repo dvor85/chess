@@ -7,7 +7,7 @@ class Minimax:
         self.player_color = board.cfg.PLAYER_COLOR
 
         self.pawnEval = [
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [78.0, 79.0, 79.0, 79.5, 79.5, 79.0, 79.0, 78.0],
                 [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
                 [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
                 [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
@@ -99,7 +99,6 @@ class Minimax:
 
     def minimaxRoot (self, depth, is_maximazing):
         color = self.color if is_maximazing else self.player_color
-#         color = self.player_color if is_maximazing else self.color
         all_moves = self.board.all_valid_moves(color)
         bestMove = -9999
         bestMoveFound = None, None
@@ -113,8 +112,6 @@ class Minimax:
                     bestMove = value
                     bestMoveFound = f_pos, new_pos;
 
-        print(f"color = {color}; bestMove = {bestMove}")
-
         return bestMoveFound;
 
     def minimax (self, depth, alpha, beta, is_maximazing):
@@ -127,7 +124,6 @@ class Minimax:
 
         color = self.color if is_maximazing else self.player_color
 
-#         color = self.player_color if is_maximazing else self.color
         if depth == 0:
             return -self.evaluateBoard()
 
@@ -149,6 +145,8 @@ class Minimax:
 
         return bestMove
 
-    def getBestMove(self):
-        return self.minimaxRoot(self.depth, True)
+    def getBestMove(self, qres):
+        res = self.minimaxRoot(self.depth, True)
+        qres.put(res)
+        return res
 

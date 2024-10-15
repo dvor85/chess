@@ -37,20 +37,20 @@ class King(Figure.Figure):
 
             if self.color == 'w':
                 if 'Q' in self.board.castling:
-                    if not any(self.board.get_figure_from_pos((i, 7)) for i in range(1, 4)):
+                    if not any(self.board((i, 7)).figure for i in range(1, 4)):
                         return 'Q'
 
                 if 'K' in self.board.castling:
-                    if not any(self.board.get_figure_from_pos((i, 7)) for i in range(5, 7)):
+                    if not any(self.board((i, 7)).figure for i in range(5, 7)):
                         return 'K'
 
             else:
                 if 'q' in self.board.castling:
-                    if not any(self.board.get_figure_from_pos((i, 0)) for i in range(1, 4)):
+                    if not any(self.board((i, 0)).figure for i in range(1, 4)):
                         return 'q'
 
                 if 'k' in self.board.castling:
-                    if not any(self.board.get_figure_from_pos((i, 0)) for i in range(5, 7)):
+                    if not any(self.board((i, 0)).figure for i in range(5, 7)):
                         return 'k'
 
         return '0'

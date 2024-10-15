@@ -1,5 +1,7 @@
 import pygame
 from chessboard import Board
+import threading
+import queue
 
 
 class Chess():
@@ -14,18 +16,23 @@ class Chess():
 
         self.board = Board(self.screen, *Chess.WINDOW_SIZE)
         self.board.new_game()
+        self.bot_thread = None
 
         self.running = False
 
     def draw(self, events):
-        self.screen.fill(self.board.LIGHT_COLOR)
-        self.board.draw(events)
+        if self.bot_thread is None:
+            self.screen.fill(self.board.LIGHT_COLOR)
+            self.board.draw(events)
+
+        self.board.infopanel.draw(events, self.bot_thread is not None)
 
         pygame.display.update()
 
     def start_game(self):
 
         self.running = True
+        qres = queue.Queue(maxsize=1)
         while self.running:
             res = False
             events = pygame.event.get()
@@ -34,14 +41,17 @@ class Chess():
             if not self.board.game_over:
                 if self.board.turn == self.board.bot_color:
                 # ход бота
-                    b = pygame.time.get_ticks()
-                    self.clock.get_time()
-                    f, t = self.board.bot.getBestMove()
-                    self.board.selected_figure = self.board.get_figure_from_pos(f)
-                    self.board.clicked_square = self.board(t)
-                    res = self.board.selected_figure.move(self.board.clicked_square)
-                    self.board.infopanel.timers.update(self.board.turn, pygame.time.get_ticks() - b)
-#                     print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))
+                    if self.bot_thread is None:
+                        self.bot_thread = threading.Thread(target=self.board.bot.getBestMove, args=[qres], daemon=True)
+                        self.bot_thread.start()
+
+                    if not qres.empty():
+                        self.bot_thread = None
+                        f, t = qres.get()
+                        self.board.selected_figure = self.board(f).figure
+                        self.board.clicked_square = self.board(t)
+                        res = self.board.selected_figure.move(self.board.clicked_square)
+
                 else:
 #                   ход игрока
                     mx, my = pygame.mouse.get_pos()
@@ -50,11 +60,11 @@ class Chess():
                             # нажата кнопка мыши
                             if event.button == 1:
                                 res = self.board.on_click(mx, my)
-                    self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
-    #                     print('player ', datetime.timedelta(milliseconds=self.clock.get_time()))
+
+                self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
 
             if res:
-#                 print('bot ', datetime.timedelta(milliseconds=self.clock.get_time()))
+                print(f"Оценка позиции {self.board.turn} = ", -self.board.bot.evaluateBoard())
                 self.board.change_side()
 
                 result = (self.board.is_in_checkmate('b'), self.board.is_in_checkmate('w'))
