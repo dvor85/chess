@@ -35,9 +35,9 @@ class Timers():
             self.black -= datetime.timedelta(milliseconds=ms)
 
         if self.white.total_seconds() <= 0:
-            self.board.game_result = -3
+            self.board.game_over(-3)
         elif self.black.total_seconds() <= 0:
-            self.board.game_result = 3
+            self.board.game_over(3)
 
     def _conv(self, td):
         seconds = int(td.total_seconds())
@@ -118,6 +118,6 @@ class InfoPanel:
         if not bot_thread:
             self.menu.draw(events)
             self.draw_history()
-        self.draw_message(self.board.message)
+        self.draw_message(self.board._message)
         pygame.draw.rect(self.screen, self.board.DARK_COLOR, self.panel, width=5)
 

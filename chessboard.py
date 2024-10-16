@@ -86,8 +86,8 @@ class Board:
         return columns[pos[0]] + str(8 - pos[1])
 
     def new_game(self, fen=None):
-        self.game_result = 0
-        self.message = ''
+        self._game_result = 0
+        self._message = ''
         self.selected_figure = None
         self.turn = 'w'
         self.castling = '-'
@@ -98,6 +98,7 @@ class Board:
         if fen is None:
             self.history.clear()
             fen = self.cfg.START_POSITION
+            self.infopanel.timers.reset()
 
         self.parse_fen(fen)
 
@@ -106,25 +107,26 @@ class Board:
         self.squares = self.generate_squares()
         self.setup_board()
 
-        self.infopanel.timers.reset()
-
     def save_game(self):
         self.cfg.START_POSITION = self.generate_fen()
         self.cfg.save_config()
 
     def game_over(self, result=None):
         if result:
-            self.game_result = result
-            if result == 1:
-                self.message = f'Пат!'
-            elif result == 2:
-                self.message = f'Мат черным!'
-            elif result == -2:
-                self.message = f'Мат белым!'
-            elif result == 3:
-                self.message = f'Время черных вышло!'
-            elif result == -3:
-                self.message = f'Время белых вышло!'
+            self._game_result = result
+
+        if self._game_result:
+            if self._game_result == 1:
+                self._message = f'Пат!'
+            elif self._game_result == 2:
+                self._message = f'Мат черным!'
+            elif self._game_result == -2:
+                self._message = f'Мат белым!'
+            elif self._game_result == 3:
+                self._message = f'Время черных вышло!'
+            elif self._game_result == -3:
+                self._message = f'Время белых вышло!'
+            return True
 
     def change_side(self):
         to_pos = self.clicked_square.pos

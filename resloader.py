@@ -4,7 +4,7 @@ from pathlib import Path
 
 class ResLoader:
 
-    _instance = None
+    __instance = None
 
     def __init__(self):
         self._cached_fonts = {}
@@ -13,9 +13,9 @@ class ResLoader:
 
     @classmethod
     def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+        if cls.__instance is None:
+            cls.__instance = cls()
+        return cls.__instance
 
     def getImage(self, path):
         return self._cached_images.setdefault(Path(path).name, pygame.image.load(path))
@@ -32,7 +32,7 @@ class ResLoader:
     def get_font(self, font_preferences, size, bold=False):
         key = str(font_preferences) + '|' + str(size) + str(bold)
         font = self._cached_fonts.get(key, None)
-        if font == None:
+        if font is None:
             font = self.make_font(font_preferences, size, bold)
             self._cached_fonts[key] = font
         return font
@@ -40,7 +40,7 @@ class ResLoader:
     def create_text(self, text, fonts, size, color, bold=False):
         key = '|'.join(map(str, (fonts, size, color, bold, text)))
         image = self._cached_text.get(key, None)
-        if image == None:
+        if image is None:
             font = self.get_font(fonts, size, bold)
             image = font.render(text, True, color)
             self._cached_text[key] = image

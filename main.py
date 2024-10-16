@@ -38,9 +38,9 @@ class Chess():
             events = pygame.event.get()
             self.draw(events)
 
-            if self.board.game_result == 0:
+            if not self.board.game_over():
                 if self.board.turn == self.board.bot_color:
-                # ход бота
+#                   ход бота
                     if self.bot_thread is None:
                         self.bot_thread = threading.Thread(target=self.board.bot.getBestMove, args=[qres], daemon=True)
                         self.bot_thread.start()
@@ -67,22 +67,19 @@ class Chess():
                     print(f"Оценка позиции {self.board.turn} = ", -self.board.bot.evaluateBoard())
                     self.board.change_side()
 
-                    self.board.game_result = 2 * (self.board.is_in_checkmate("b") - self.board.is_in_checkmate("w"))
                     if self.board.without_attack > 50:
-                        self.board.game_result = 1
+                        self.board.game_over(1)
+                    else:
+                        self.board.game_over(2 * (self.board.is_in_checkmate("b") - self.board.is_in_checkmate("w")))
 
-            else:
-                self.board.game_over(self.board.game_result)
+                    print(self.board._message)
 
             for event in events:
                 # Выход
                 if event.type == pygame.QUIT:
-                    self.board.game_over()
                     self.running = False
 
             self.clock.tick(30)
-
-#             print(self.board.message)
 
 
 if __name__ == '__main__':

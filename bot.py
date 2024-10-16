@@ -87,7 +87,7 @@ class Minimax:
             elif figure.notation == 'B':
                 return 33 + (self.bishopEval[y][x] if figure.color == 'w' else self.bishopEval[7 - y][x])
             elif figure.notation == 'Q':
-                return 90 + self.evalQueen[y][x];
+                return 90 + self.evalQueen[y][x]
             elif figure.notation == 'K':
                 return 900 + (self.kingEval[y][x] if figure.color == 'w' else  self.kingEval[7 - y][x])
 
@@ -110,7 +110,7 @@ class Minimax:
 
                 if (value >= bestMove):
                     bestMove = value
-                    bestMoveFound = f_pos, new_pos;
+                    bestMoveFound = f_pos, new_pos
 
         return bestMoveFound;
 
@@ -129,20 +129,20 @@ class Minimax:
 
         bestMove = -9999 if is_maximazing else 9999
 
-        all_moves = self.board.all_valid_moves(color)
-        for f_pos, squares in all_moves.items():
-            for square in squares:
-                if self.board.game_result == 0:
-                    if is_maximazing:
-                        bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
-                        alpha = max(alpha, bestMove);
+        if not self.board.game_over():
+            all_moves = self.board.all_valid_moves(color)
+            for f_pos, squares in all_moves.items():
+                for square in squares:
+                        if is_maximazing:
+                            bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
+                            alpha = max(alpha, bestMove)
 
-                    else:
-                        bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
-                        beta = min(beta, bestMove);
+                        else:
+                            bestMove = self.board.virtual_move([f_pos, square.pos], on_moved)
+                            beta = min(beta, bestMove)
 
-                    if (beta <= alpha):
-                        return bestMove
+                        if (beta <= alpha):
+                            return bestMove
 
         return bestMove
 
