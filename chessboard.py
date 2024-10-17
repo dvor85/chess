@@ -116,7 +116,7 @@ class Board:
             self._game_result = result
 
         if self._game_result:
-            if self._game_result == 1:
+            if abs(self._game_result) == 1:
                 self._message = f'Пат!'
             elif self._game_result == 2:
                 self._message = f'Мат черным!'

@@ -29,6 +29,26 @@ class Chess():
 
         pygame.display.update()
 
+    def bot_move(self, qres):
+        if self.bot_thread is None:
+            self.bot_thread = threading.Thread(target=self.board.bot.getBestMove, args=[qres], daemon=True)
+            self.bot_thread.start()
+
+        if not qres.empty():
+            self.bot_thread = None
+            f, t = qres.get()
+            self.board.selected_figure = self.board(f).figure
+            self.board.clicked_square = self.board(t)
+            return self.board.selected_figure.move(self.board.clicked_square)
+
+    def player_move(self, events):
+        mx, my = pygame.mouse.get_pos()
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # нажата кнопка мыши
+                if event.button == 1:
+                    return self.board.on_click(mx, my)
+
     def start_game(self):
 
         self.running = True
@@ -41,36 +61,23 @@ class Chess():
             if not self.board.game_over():
                 if self.board.turn == self.board.bot_color:
 #                   ход бота
-                    if self.bot_thread is None:
-                        self.bot_thread = threading.Thread(target=self.board.bot.getBestMove, args=[qres], daemon=True)
-                        self.bot_thread.start()
-
-                    if not qres.empty():
-                        self.bot_thread = None
-                        f, t = qres.get()
-                        self.board.selected_figure = self.board(f).figure
-                        self.board.clicked_square = self.board(t)
-                        res = self.board.selected_figure.move(self.board.clicked_square)
-
+                    res = self.bot_move(qres)
                 else:
 #                   ход игрока
-                    mx, my = pygame.mouse.get_pos()
-                    for event in events:
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            # нажата кнопка мыши
-                            if event.button == 1:
-                                res = self.board.on_click(mx, my)
+                    res = self.player_move(events)
 
                 self.board.infopanel.timers.update(self.board.turn, self.clock.get_time())
 
                 if res:
-                    print(f"Оценка позиции {self.board.turn} = ", -self.board.bot.evaluateBoard())
+                    print(f"Оценка позиции игрока = ", self.board.bot.evaluateBoard())
                     self.board.change_side()
 
                     if self.board.without_attack > 50:
                         self.board.game_over(1)
+                    elif self.board.turn == 'b':
+                        self.board.game_over(self.board.is_in_checkmate('b'))
                     else:
-                        self.board.game_over(2 * (self.board.is_in_checkmate("b") - self.board.is_in_checkmate("w")))
+                        self.board.game_over(-self.board.is_in_checkmate('w'))
 
                     print(self.board._message)
 

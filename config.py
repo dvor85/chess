@@ -26,11 +26,9 @@ class Config:
     def __load_config(self):
         if Config.__settings_f.is_file():
             with Config.__settings_f.open('r') as fp:
-                data = json.load(fp)
-                self.__dict__.update(data)
+                self.__dict__.update(json.load(fp))
 
     def save_config(self):
-
         with Config.__settings_f.open('w') as fp:
             json.dump(self.__dict__, fp, indent=4, sort_keys=True)
 
